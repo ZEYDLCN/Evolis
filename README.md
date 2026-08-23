@@ -95,9 +95,22 @@ docker/         Dockerfiles for api/worker; see docker-compose.yml at the root
 MVP+: daily entry ingestion, structured extraction, interest/skill scoring,
 version snapshots, the diff engine, timeline, task-based completion
 tracking, semantic clustering with LLM-named topics, a skill progression
-graph, and a rule-based Ask LifeDiff pipeline (classify → plan → SQL/vector
-analysis → grounded answer). Schema is managed with Alembic
-(`alembic upgrade head`). See
+graph, a Next.js frontend wired to all of it, and a rule-based Ask LifeDiff
+pipeline (classify → plan → SQL/vector analysis → grounded answer). Schema
+is managed with Alembic (`alembic upgrade head`). See
 [docs/ARCHITECTURE.md § What's intentionally NOT built yet](docs/ARCHITECTURE.md#8-whats-intentionally-not-built-yet-phase-2--3-per-original-spec)
-for what's still open (real frontend, LangGraph orchestration, monitoring
-stack, Knowledge Graph, etc).
+for what's still open (LangGraph orchestration, monitoring stack, Knowledge
+Graph, etc).
+
+### Frontend
+
+```bash
+cd apps/frontend
+npm install
+npm run dev   # http://localhost:3000, expects the API at NEXT_PUBLIC_API_URL (default localhost:8000)
+```
+
+Screens: Login/Register, Today (daily check-in), Timeline, Diff, Profile
+(version generation), Projects, Insights (interests/skills/skill graph/
+behavior), Ask LifeDiff. Auth token lives in `localStorage`; no state
+library — plain `fetch` calls through `apps/frontend/lib/api.ts`.

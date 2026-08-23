@@ -154,8 +154,13 @@ Done since the initial MVP:
   (unchanged from `skills.py`) plus a curated prerequisite edge list, filtered
   to skills the user actually has; `GET /analytics/skill-graph`
 
+- ~~Frontend wired to the real API~~ — `apps/frontend`: login/register,
+  Today (entry capture), Timeline, Diff, Profile (version generation),
+  Projects, Insights (interests/skills/skill-graph/behavior), Ask LifeDiff.
+  Plain `fetch` + `localStorage` JWT, no state library — small enough not to
+  need one yet.
+
 Still open, roughly in the order it's worth picking them up:
-- Frontend wired to the real API (currently a static Next.js scaffold)
 - Full LangGraph agent orchestration (current orchestrator is a plain
   function pipeline with the same stage boundaries — see § 6)
 - Prometheus/Grafana/LangSmith wiring (`src/monitoring/` has the seam but is
