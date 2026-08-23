@@ -89,11 +89,11 @@ class HeuristicExtractor:
             status = "partial" if not blockers else "blocked"
 
         activities = []
-        if topics:
+        if topics or duration is not None:
             activities.append(
                 ExtractedActivity(
                     type="learning" if not blockers else "project_development",
-                    topic=topics[0],
+                    topic=topics[0] if topics else None,
                     duration_minutes=duration,
                 )
             )

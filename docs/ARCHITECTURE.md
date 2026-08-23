@@ -177,16 +177,27 @@ Done since the initial MVP:
   `src/services/account_service.py`; `GET /me/export`, `DELETE /me`
   (explicit multi-table deletion, not an ORM cascade), wired into the
   frontend Profile page
+- ~~Golden dataset + AI evaluation~~ (§37-38) —
+  `tests/evaluation/golden_dataset.json` + `src/evaluation/extraction_eval.py`
+  (topic P/R/F1, duration/activity/completion accuracy against any
+  `Extractor`) and `src/evaluation/retrieval_eval.py` (Precision@K, Recall@K,
+  MRR, generic over ranked id lists). Regression-guarded by
+  `tests/evaluation/test_golden_dataset.py` on every test run. Building this
+  harness caught and fixed a real bug: `HeuristicExtractor` was discarding
+  a detected duration whenever no topic was found in the same sentence.
+- ~~CI/CD~~ — `.github/workflows/ci.yml`: backend job runs
+  `alembic upgrade head` + `alembic check` (fails if models drift from the
+  latest migration) then the full pytest suite; frontend job runs
+  `next build` (typecheck + static generation) on every push/PR to `main`
 
 Still open, roughly in the order it's worth picking them up:
 - Full LangGraph agent orchestration (current orchestrator is a plain
   function pipeline with the same stage boundaries — see § 6)
 - Prometheus/Grafana/LangSmith wiring (`src/monitoring/` has the seam but is
   currently empty)
-- Golden dataset + AI evaluation harness (§37-38) — extraction/retrieval/
-  clustering/LLM metrics are all still just described in the spec, not
-  implemented
-- Encryption at rest, CI/CD pipeline, production deployment/monitoring stack
+- Clustering quality metrics (silhouette score, cluster stability) — the
+  eval harness above covers extraction and retrieval, not clustering yet
+- Encryption at rest, production deployment
 - Knowledge Graph (Neo4j)
 - Mobile app, calendar import, git integration, social share cards
 

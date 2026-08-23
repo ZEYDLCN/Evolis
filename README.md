@@ -78,6 +78,12 @@ curl -s -X POST localhost:8000/ask -H "Authorization: Bearer $TOKEN" \
 python3 -m pytest tests/ -q
 ```
 
+Includes an extraction/retrieval evaluation harness against a golden
+dataset (`tests/evaluation/`) — a regression guard for the extraction
+pipeline's accuracy, not just its plumbing. CI (`.github/workflows/ci.yml`)
+runs this plus `alembic check` (schema drift) and a frontend `next build`
+on every push/PR to `main`.
+
 ## Project structure
 
 ```

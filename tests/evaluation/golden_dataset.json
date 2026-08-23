@@ -1,0 +1,72 @@
+[
+  {
+    "input": "Bugün 3 saat LangGraph çalıştım.",
+    "expected_topics": ["LangGraph"],
+    "expected_duration_minutes": 180,
+    "expected_activity": "learning",
+    "expected_completion_status": "none"
+  },
+  {
+    "input": "Bugün 2 saat LangGraph çalıştım, Voxera backend'ini geliştirdim. Deployment tarafına geçemedim çünkü Docker config ile uğraştım.",
+    "expected_topics": ["LangGraph", "Voxera", "Docker"],
+    "expected_duration_minutes": 120,
+    "expected_activity": "project_development",
+    "expected_completion_status": "blocked"
+  },
+  {
+    "input": "RAG retrieval üzerine 90 dakika çalıştım.",
+    "expected_topics": ["RAG"],
+    "expected_duration_minutes": 90,
+    "expected_activity": "learning",
+    "expected_completion_status": "none"
+  },
+  {
+    "input": "Bugün Portfolio projesini tamamladım.",
+    "expected_topics": ["Portfolio"],
+    "expected_duration_minutes": null,
+    "expected_activity": "learning",
+    "expected_completion_status": "done"
+  },
+  {
+    "input": "I spent 2 hours on Docker networking today.",
+    "expected_topics": ["Docker"],
+    "expected_duration_minutes": 120,
+    "expected_activity": "learning",
+    "expected_completion_status": "none"
+  },
+  {
+    "input": "FastAPI endpoint yazdım, 45 dakika sürdü.",
+    "expected_topics": ["FastAPI"],
+    "expected_duration_minutes": 45,
+    "expected_activity": "learning",
+    "expected_completion_status": "none"
+  },
+  {
+    "input": "PostgreSQL sorgusunu optimize etmeye çalıştım ama performans sorunuyla uğraştım.",
+    "expected_topics": ["PostgreSQL"],
+    "expected_duration_minutes": null,
+    "expected_activity": "project_development",
+    "expected_completion_status": "blocked"
+  },
+  {
+    "input": "1.5 saat kitap okudum.",
+    "expected_topics": [],
+    "expected_duration_minutes": 90,
+    "expected_activity": "learning",
+    "expected_completion_status": "none"
+  },
+  {
+    "input": "Bugün dinlendim, hiçbir şey yapmadım.",
+    "expected_topics": [],
+    "expected_duration_minutes": null,
+    "expected_activity": null,
+    "expected_completion_status": "none"
+  },
+  {
+    "input": "Embeddings ve Vector Search üzerine 1 saat çalıştım, HDBSCAN ile clustering denedim.",
+    "expected_topics": ["Embeddings", "Vector Search", "HDBSCAN"],
+    "expected_duration_minutes": 60,
+    "expected_activity": "learning",
+    "expected_completion_status": "none"
+  }
+]
