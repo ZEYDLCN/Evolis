@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, setToken, ApiError } from "../../lib/api";
 import { page, card, input, button, buttonSecondary, brand, errorText, mutedText } from "../../lib/styles";
 import EvolisLogo from "../../components/EvolisLogo";
+import GoogleSignInButton from "../../components/GoogleSignInButton";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -28,6 +29,9 @@ export default function LoginPage() {
       setLoading(false);
     }
   }
+
+  const handleGoogleSuccess = useCallback(() => router.push("/today"), [router]);
+  const handleGoogleError = useCallback((message: string) => setError(message), []);
 
   return (
     <main style={{ ...page, maxWidth: 420, paddingTop: "4rem" }}>
@@ -61,6 +65,8 @@ export default function LoginPage() {
         </button>
 
         {error && <p style={errorText}>{error}</p>}
+
+        <GoogleSignInButton onSuccess={handleGoogleSuccess} onError={handleGoogleError} />
       </form>
     </main>
   );

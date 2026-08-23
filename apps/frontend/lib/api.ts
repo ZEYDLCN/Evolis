@@ -62,6 +62,9 @@ export const api = {
     apiFetch<{ access_token: string }>("/auth/register", { method: "POST", body: JSON.stringify({ email, password }) }),
   login: (email: string, password: string) =>
     apiFetch<{ access_token: string }>("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }),
+  googleConfig: () => apiFetch<{ enabled: boolean; client_id: string | null }>("/auth/google/config"),
+  loginWithGoogle: (credential: string) =>
+    apiFetch<{ access_token: string }>("/auth/google", { method: "POST", body: JSON.stringify({ credential }) }),
 
   addEntry: (text: string) => apiFetch("/entries", { method: "POST", body: JSON.stringify({ text }) }),
   listEntries: () => apiFetch<Entry[]>("/entries"),

@@ -175,3 +175,33 @@ def test_account_export_and_delete(client):
     # The token now points at a deleted user.
     r = client.get("/entries", headers=headers)
     assert r.status_code == 401
+
+
+def test_google_auth_reports_not_configured_by_default(client):
+    r = client.get("/auth/google/config")
+    assert r.status_code == 200
+    assert r.json() == {"enabled": False, "client_id": None}
+
+    r = client.post("/auth/google", json={"credential": "whatever"})
+    assert r.status_code == 501
+
+
+def test_google_auth_full_flow_when_configured(client, monkeypatch):
+    monkeypatch.setattr("apps.api.config.GOOGLE_CLIENT_ID", "test-client-id.apps.googleusercontent.com")
+
+    r = client.get("/auth/google/config")
+    assert r.json() == {"enabled": True, "client_id": "test-client-id.apps.googleusercontent.com"}
+
+    from src.services.google_auth import GoogleProfile
+
+    monkeypatch.setattr(
+        "apps.api.routers.auth.verify_google_credential",
+        lambda credential: GoogleProfile(sub="sub-xyz", email="googleuser@example.com", name="G User"),
+    )
+
+    r = client.post("/auth/google", json={"credential": "fake-id-token"})
+    assert r.status_code == 200
+    token = r.json()["access_token"]
+
+    r = client.get("/entries", headers={"Authorization": f"Bearer {token}"})
+    assert r.status_code == 200

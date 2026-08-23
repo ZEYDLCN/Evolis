@@ -54,7 +54,11 @@ class User(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
-    hashed_password: Mapped[str] = mapped_column(String(255))
+    # Nullable: a Google-only account (see src/services/auth_service.py's
+    # Google sign-in path) has no password to check — it can only ever log
+    # in via Google. A password-based account never has google_sub set.
+    hashed_password: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    google_sub: Mapped[str | None] = mapped_column(String(255), unique=True, index=True, nullable=True)
     display_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=_now)
 

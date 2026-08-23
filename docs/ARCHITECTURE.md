@@ -126,6 +126,7 @@ Query classes: `interest_change`, `skill_progress`, `project_analysis`,
 
 ```
 POST /auth/register, POST /auth/login
+GET  /auth/google/config, POST /auth/google
 POST /entries, GET /entries
 POST /projects, GET /projects, GET /projects/{id}/dashboard
 POST /tasks, GET /tasks, POST /tasks/{id}/complete
@@ -238,6 +239,16 @@ Done since the initial MVP:
   page, the favicon (`app/icon.svg`), and the generated release-notes share
   card (`src/versions/share_card.py`) draw from one palette instead of
   each inventing its own.
+- ~~Sign in with Google~~ (§32, an addition beyond the original spec) —
+  `src/services/google_auth.py` verifies a Google Identity Services ID
+  token (`google-auth`) and finds-or-creates the matching `User`
+  (`google_sub` column, `hashed_password` now nullable — a Google-only
+  account never has one). `GET /auth/google/config` lets the frontend
+  render its button only when `GOOGLE_CLIENT_ID` is actually set, and
+  `POST /auth/google` returns a 501 with a clear message rather than a
+  broken flow when it isn't. An email that already has a password account
+  gets linked to Google rather than duplicated — either login method keeps
+  working afterward.
 
 Still open:
 - Mobile app, calendar import, git integration — each needs a real

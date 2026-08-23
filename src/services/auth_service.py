@@ -41,7 +41,9 @@ def hash_password(password: str) -> str:
     return f"{salt}${digest.hex()}"
 
 
-def verify_password(password: str, hashed: str) -> bool:
+def verify_password(password: str, hashed: str | None) -> bool:
+    if hashed is None:
+        return False  # a Google-only account has no password to check
     try:
         salt, digest_hex = hashed.split("$")
     except ValueError:

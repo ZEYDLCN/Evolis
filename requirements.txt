@@ -5,9 +5,10 @@ pydantic>=2.7
 email-validator>=2.1
 sqlalchemy>=2.0
 alembic>=1.13
-langgraph>=0.2        # orchestrates the Ask LifeDiff pipeline (src/agents/graph.py)
+langgraph>=0.2        # orchestrates the Ask Evolis pipeline (src/agents/graph.py)
 prometheus-client>=0.20
 cryptography>=42      # optional at runtime (ENCRYPTION_KEY), required to import the module
+google-auth>=2.30     # optional at runtime (GOOGLE_CLIENT_ID), verifies Sign in with Google ID tokens
 
 # Background jobs
 celery>=5.4
@@ -19,7 +20,7 @@ redis>=5.0
 # keeps `pip install -r requirements.txt && uvicorn apps.api.main:app` fast
 # for local dev.
 #
-# anthropic>=0.40          # LLM structured extraction + Ask LifeDiff explanations
+# anthropic>=0.40          # LLM structured extraction + Ask Evolis explanations
 # sentence-transformers>=3.0
 # hdbscan>=0.8
 # scikit-learn>=1.5

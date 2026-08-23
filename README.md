@@ -134,3 +134,12 @@ export/account deletion), Projects, Insights (interests/skills/skill graph/
 behavior/anomalies/patterns), Ask Evolis. Auth token lives in
 `localStorage`; no state library — plain `fetch` calls through
 `apps/frontend/lib/api.ts`.
+
+**Sign in with Google** is optional and off until you set it up: create an
+OAuth 2.0 Client ID ("Web application") at
+[console.cloud.google.com/apis/credentials](https://console.cloud.google.com/apis/credentials),
+add your frontend origin (e.g. `http://localhost:3000`) under "Authorized
+JavaScript origins", and set `GOOGLE_CLIENT_ID` in `.env`. The frontend
+picks it up automatically from `GET /auth/google/config` — no separate
+frontend env var needed. Leave it unset and the login page just shows
+email/password, nothing broken.
