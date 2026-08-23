@@ -1,10 +1,12 @@
+import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from apps.api.routers import account, analytics, ask, auth, clusters, diff, entries, projects, tasks, timeline, versions
 from src.database.base import init_db
+from src.monitoring.metrics import http_request_duration_seconds, http_requests_total, render_metrics
 
 
 @asynccontextmanager
@@ -28,9 +30,30 @@ app.add_middleware(
 )
 
 
+@app.middleware("http")
+async def _prometheus_middleware(request: Request, call_next):
+    start = time.perf_counter()
+    response = await call_next(request)
+
+    # Prefer the matched route template (e.g. "/projects/{project_id}/dashboard")
+    # over the raw path, so per-id URLs don't each get their own label series.
+    route = request.scope.get("route")
+    path = route.path if route else request.url.path
+
+    http_requests_total.labels(method=request.method, path=path, status_code=response.status_code).inc()
+    http_request_duration_seconds.labels(method=request.method, path=path).observe(time.perf_counter() - start)
+    return response
+
+
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
+
+
+@app.get("/metrics")
+def metrics() -> Response:
+    body, content_type = render_metrics()
+    return Response(content=body, media_type=content_type)
 
 
 app.include_router(auth.router)

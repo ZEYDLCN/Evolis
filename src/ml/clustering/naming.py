@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import os
 
+from src.monitoring.metrics import llm_calls_total
+
 SYSTEM_PROMPT = """You name a cluster of semantically related personal
 activity-log entries with a short (2-4 word) topic label, e.g.
 "RAG & Semantic Retrieval" or "Backend Infrastructure". Respond with the
@@ -30,10 +32,12 @@ def name_cluster(representative_texts: list[str], fallback_topics: list[str]) ->
             )
             label = "".join(b.text for b in response.content if b.type == "text").strip()
             if label:
+                llm_calls_total.labels(purpose="cluster_naming", outcome="success").inc()
                 return label
         except Exception:
-            pass
+            llm_calls_total.labels(purpose="cluster_naming", outcome="error").inc()
 
+    llm_calls_total.labels(purpose="cluster_naming", outcome="fallback").inc()
     return _fallback_label(fallback_topics)
 
 

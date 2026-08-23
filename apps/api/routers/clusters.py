@@ -16,9 +16,12 @@ router = APIRouter(prefix="/clusters", tags=["clusters"])
 
 
 @router.post("/rebuild")
-def rebuild(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[dict]:
-    clusters = rebuild_clusters_for_user(db, user.id)
-    return [{"id": c.id, "label": c.label, "representative_topics": c.representative_topics} for c in clusters]
+def rebuild(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict:
+    result = rebuild_clusters_for_user(db, user.id)
+    return {
+        "clusters": [{"id": c.id, "label": c.label, "representative_topics": c.representative_topics} for c in result.clusters],
+        "quality": {"silhouette_score": result.silhouette_score, "stability_score": result.stability_score},
+    }
 
 
 @router.get("")

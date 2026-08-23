@@ -57,6 +57,14 @@ def test_entries_require_auth(client):
     assert r.status_code == 401
 
 
+def test_metrics_endpoint_reflects_traffic(client):
+    client.get("/health")
+    r = client.get("/metrics")
+    assert r.status_code == 200
+    assert "lifediff_http_requests_total" in r.text
+    assert 'path="/health"' in r.text
+
+
 def test_tasks_drive_completion_rate(client):
     headers = _auth_headers(client)
 

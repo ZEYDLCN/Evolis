@@ -23,6 +23,8 @@ import os
 import re
 from typing import Protocol
 
+from src.monitoring.metrics import llm_calls_total
+
 from .schemas import ExtractedActivity, ExtractedEntry
 
 SYSTEM_PROMPT = """You extract structured data from a personal daily activity log.
@@ -51,15 +53,21 @@ class AnthropicExtractor:
         self._model = model
 
     def extract(self, text: str) -> ExtractedEntry:
-        response = self._client.messages.create(
-            model=self._model,
-            max_tokens=1024,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": text}],
-        )
-        raw = "".join(block.text for block in response.content if block.type == "text")
-        data = json.loads(_strip_code_fence(raw))
-        return ExtractedEntry.model_validate(data)
+        try:
+            response = self._client.messages.create(
+                model=self._model,
+                max_tokens=1024,
+                system=SYSTEM_PROMPT,
+                messages=[{"role": "user", "content": text}],
+            )
+            raw = "".join(block.text for block in response.content if block.type == "text")
+            data = json.loads(_strip_code_fence(raw))
+            result = ExtractedEntry.model_validate(data)
+        except Exception:
+            llm_calls_total.labels(purpose="extraction", outcome="error").inc()
+            raise
+        llm_calls_total.labels(purpose="extraction", outcome="success").inc()
+        return result
 
 
 _DURATION_RE = re.compile(r"(\d+(?:[.,]\d+)?)\s*(saat|hour|hr|dakika|dk|min)", re.IGNORECASE)

@@ -9,17 +9,41 @@ integration-testable without Celery.
 from __future__ import annotations
 
 from collections import defaultdict
+from dataclasses import dataclass, field
 
 from sqlalchemy.orm import Session
 
 from src.database.models import Cluster, Embedding, Entry, EntryTopic
 from src.ml.clustering.hdbscan_cluster import cluster_embeddings
 from src.ml.clustering.naming import name_cluster
+from src.ml.clustering.quality import silhouette, stability
 
 MIN_CLUSTER_SIZE = 3
 
 
-def rebuild_clusters_for_user(db: Session, user_id: str) -> list[Cluster]:
+@dataclass
+class ClusterRebuildResult:
+    clusters: list[Cluster] = field(default_factory=list)
+    silhouette_score: float | None = None
+    stability_score: float | None = None
+
+
+def _previous_cluster_labels(db: Session, entry_ids: list[str]) -> dict[str, str]:
+    """One prior cluster id per entry (first topic's, if any), used only to
+    measure how much rebuild_clusters_for_user's own relabeling churns —
+    not shown to users."""
+    rows = (
+        db.query(EntryTopic.entry_id, EntryTopic.cluster_id)
+        .filter(EntryTopic.entry_id.in_(entry_ids), EntryTopic.cluster_id.is_not(None))
+        .all()
+    )
+    previous: dict[str, str] = {}
+    for entry_id, cluster_id in rows:
+        previous.setdefault(entry_id, cluster_id)
+    return previous
+
+
+def rebuild_clusters_for_user(db: Session, user_id: str) -> ClusterRebuildResult:
     rows = (
         db.query(Embedding.entry_id, Embedding.vector)
         .join(Entry, Entry.id == Embedding.entry_id)
@@ -27,14 +51,20 @@ def rebuild_clusters_for_user(db: Session, user_id: str) -> list[Cluster]:
         .all()
     )
     if len(rows) < MIN_CLUSTER_SIZE:
-        return []
+        return ClusterRebuildResult()
 
     entry_ids = [r[0] for r in rows]
     vectors = [r[1] for r in rows]
 
     assignment = cluster_embeddings(vectors, min_cluster_size=MIN_CLUSTER_SIZE)
     if assignment is None:
-        return []
+        return ClusterRebuildResult()
+
+    quality_silhouette = silhouette(vectors, assignment.labels)
+
+    previous_by_entry = _previous_cluster_labels(db, entry_ids)
+    previous_labels = [previous_by_entry.get(eid, "none") for eid in entry_ids]
+    quality_stability = stability(previous_labels, assignment.labels) if previous_by_entry else None
 
     # Wipe this user's previous cluster assignments before re-labeling —
     # cluster identities aren't stable across rebuilds (HDBSCAN doesn't
@@ -76,7 +106,7 @@ def rebuild_clusters_for_user(db: Session, user_id: str) -> list[Cluster]:
         created.append(cluster)
 
     db.commit()
-    return created
+    return ClusterRebuildResult(clusters=created, silhouette_score=quality_silhouette, stability_score=quality_stability)
 
 
 def list_clusters(db: Session, user_id: str) -> list[Cluster]:

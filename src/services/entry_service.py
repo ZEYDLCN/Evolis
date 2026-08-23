@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from src.database.models import Activity, Embedding, Entry, EntryTopic, Project
 from src.embeddings.embedding_service import get_embedding_model
 from src.extraction.llm_extractor import get_extractor
+from src.monitoring.metrics import track_embedding_generation
 
 
 def create_entry(db: Session, user_id: str, raw_text: str, entry_date: dt.date | None = None) -> Entry:
@@ -48,7 +49,8 @@ def create_entry(db: Session, user_id: str, raw_text: str, entry_date: dt.date |
         )
 
     model = get_embedding_model()
-    vector = model.embed(raw_text)
+    with track_embedding_generation():
+        vector = model.embed(raw_text)
     db.add(Embedding(entry_id=entry.id, model_name=model.name, vector=vector))
 
     db.commit()

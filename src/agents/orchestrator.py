@@ -3,10 +3,11 @@
     Question -> Classifier -> Planner -> Analyst (SQL + vector search)
              -> LLM Explanation -> Verifier -> Answer
 
-This is a plain function pipeline today; the shape mirrors what a LangGraph
-StateGraph would look like (each stage is a pure function over/into a shared
-state dict) so migrating to LangGraph later is a mechanical refactor, not a
-redesign.
+Actually orchestrated as a LangGraph StateGraph now (src/agents/graph.py);
+ask() below is the stable public entry point the API router calls, kept
+separate from the graph wiring so callers never depend on LangGraph
+directly. _explain/_template_explain stay here since they're about wording
+the answer, not about the graph's control flow.
 """
 from __future__ import annotations
 
@@ -14,10 +15,7 @@ import os
 
 from sqlalchemy.orm import Session
 
-from src.agents.analytics_agent import run_analysis
-from src.agents.classifier import classify_query
-from src.agents.planner import build_plan
-from src.agents.verifier import verify_grounded
+from src.monitoring.metrics import llm_calls_total
 
 EXPLAIN_SYSTEM_PROMPT = """You are LifeDiff's analyst voice. You are given a
 user's question and a JSON payload of pre-computed analytics (interest
@@ -28,22 +26,9 @@ same language as the question."""
 
 
 def ask(db: Session, user_id: str, question: str) -> dict:
-    query_class = classify_query(question)
-    plan = build_plan(question, query_class)
-    analysis = run_analysis(db, user_id, plan, question)
+    from src.agents.graph import run_ask_graph
 
-    answer = _explain(question, analysis)
-    grounded = verify_grounded(answer, analysis)
-    if not grounded:
-        answer = _template_explain(analysis)  # deterministic fallback, always grounded
-
-    return {
-        "question": question,
-        "query_class": query_class,
-        "analysis": analysis,
-        "answer": answer,
-        "grounded": True,
-    }
+    return run_ask_graph(db, user_id, question)
 
 
 def _explain(question: str, analysis: dict) -> str:
@@ -58,9 +43,12 @@ def _explain(question: str, analysis: dict) -> str:
                 system=EXPLAIN_SYSTEM_PROMPT,
                 messages=[{"role": "user", "content": f"Question: {question}\n\nData: {analysis}"}],
             )
+            llm_calls_total.labels(purpose="ask_explain", outcome="success").inc()
             return "".join(b.text for b in response.content if b.type == "text")
         except Exception:
-            pass
+            llm_calls_total.labels(purpose="ask_explain", outcome="error").inc()
+
+    llm_calls_total.labels(purpose="ask_explain", outcome="fallback").inc()
     return _template_explain(analysis)
 
 
