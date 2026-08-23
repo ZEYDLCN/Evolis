@@ -69,12 +69,17 @@ docker/
 
 See `src/database/models.py`. Tables: `users`, `entries`, `entry_topics`,
 `activities`, `projects`, `skills`, `goals`, `embeddings`, `clusters`,
-`versions`, `version_metrics`, `insights`, `focus_sessions` — matching the
-spec's section 30 with one simplification: there's no standalone `tasks`
-table yet, so `completion_rate` is derived from `Entry.completion_status`
-(done vs partial/blocked/none) rather than a created/completed task count.
-Swapping in a real tasks table is a Phase 2 item that only touches
-`src/analytics/productivity.py`.
+`versions`, `version_metrics`, `insights`, `focus_sessions`, `tasks` —
+matching the spec's section 30. `completion_rate`
+(`src/analytics/productivity.py`) prefers `Task` rows for the requested
+period and falls back to `Entry.completion_status` (done vs
+partial/blocked/none) when a user hasn't created any tasks yet — see the
+`source` field in `GET /analytics/behavior`.
+
+Schema changes go through Alembic (`migrations/`), not
+`Base.metadata.create_all` — `alembic upgrade head` against `DATABASE_URL`.
+`init_db()` (still called on API startup) remains a convenience for local
+dev/tests only.
 
 Embeddings are stored as JSON float arrays by default (works on SQLite, zero
 setup) and switch to a real pgvector `vector` column when
@@ -96,6 +101,7 @@ Anthropic key, no sentence-transformers download, no HDBSCAN):
 | Structured extraction | Claude API (`AnthropicExtractor`) | Regex/keyword heuristic (`HeuristicExtractor`) |
 | Embeddings | multilingual-e5 via sentence-transformers | Deterministic hashing embedding |
 | Clustering | HDBSCAN | K-Means, then no-op if scikit-learn is missing |
+| Cluster naming | Claude API | Most frequent topic strings in the cluster (`" & "`-joined) |
 | Anomaly detection | Isolation Forest | Rolling mean + z-score (always available) |
 | Ask LifeDiff explanation | Claude API | Template built from the analysis payload |
 
@@ -122,8 +128,10 @@ Query classes: `interest_change`, `skill_progress`, `project_analysis`,
 POST /auth/register, POST /auth/login
 POST /entries, GET /entries
 POST /projects, GET /projects, GET /projects/{id}/dashboard
+POST /tasks, GET /tasks, POST /tasks/{id}/complete
 GET  /timeline
-GET  /analytics/interests, /analytics/skills, /analytics/behavior
+GET  /analytics/interests, /analytics/skills, /analytics/behavior, /analytics/skill-graph
+POST /clusters/rebuild, GET /clusters
 POST /versions/generate, GET /versions
 GET  /diff?base=<label>&target=<label>
 POST /ask
@@ -135,15 +143,24 @@ service layer (see `src/services/*`, which always take `user_id`).
 
 ## 8. What's intentionally NOT built yet (Phase 2 / 3, per original spec)
 
-- Skill Graph as a real graph structure (currently flat skill list)
-- Knowledge Graph (Neo4j)
-- Automatic cluster naming via LLM (clustering runs; naming is a follow-up)
-- Alembic migrations (currently `Base.metadata.create_all` — fine for MVP,
-  not for schema evolution in production)
+Done since the initial MVP:
+- ~~Alembic migrations~~ — `migrations/`, `alembic upgrade head`
+- ~~Automatic cluster naming via LLM~~ — `src/ml/clustering/naming.py` +
+  `src/services/cluster_service.py` persist `Cluster` rows and
+  `EntryTopic.cluster_id`, exposed via `POST /clusters/rebuild`, `GET /clusters`
+- ~~Real task-based completion tracking~~ — `Task` model + `/tasks`, feeding
+  `completion_rate`
+- ~~Skill Graph~~ — `src/analytics/skill_graph.py`: computed node metrics
+  (unchanged from `skills.py`) plus a curated prerequisite edge list, filtered
+  to skills the user actually has; `GET /analytics/skill-graph`
+
+Still open, roughly in the order it's worth picking them up:
+- Frontend wired to the real API (currently a static Next.js scaffold)
 - Full LangGraph agent orchestration (current orchestrator is a plain
-  pipeline with the same stage boundaries)
-- Prometheus/Grafana/LangSmith wiring (`src/monitoring/` has the seam)
-- Real task-based completion tracking
+  function pipeline with the same stage boundaries — see § 6)
+- Prometheus/Grafana/LangSmith wiring (`src/monitoring/` has the seam but is
+  currently empty)
+- Knowledge Graph (Neo4j)
 - Mobile app, calendar import, git integration, social share cards
 
 ## 9. Running it

@@ -1,32 +1,21 @@
 import datetime as dt
-import os
-
-os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
+import uuid
 
 import pytest
 from fastapi.testclient import TestClient
 
+from apps.api.main import app
 
-@pytest.fixture()
-def client(tmp_path, monkeypatch):
-    db_path = tmp_path / "test.db"
-    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{db_path}")
 
-    # Reimport so the engine picks up the patched DATABASE_URL.
-    import importlib
-
-    import src.database.base as base_module
-
-    importlib.reload(base_module)
-
-    from apps.api.main import app
-
+@pytest.fixture(scope="module")
+def client():
     with TestClient(app) as c:
         yield c
 
 
 def _auth_headers(client: TestClient) -> dict:
-    resp = client.post("/auth/register", json={"email": "user@example.com", "password": "hunter2"})
+    email = f"{uuid.uuid4()}@example.com"
+    resp = client.post("/auth/register", json={"email": email, "password": "hunter2"})
     assert resp.status_code == 201, resp.text
     token = resp.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
@@ -66,3 +55,47 @@ def test_full_flow(client):
 def test_entries_require_auth(client):
     r = client.get("/entries")
     assert r.status_code == 401
+
+
+def test_tasks_drive_completion_rate(client):
+    headers = _auth_headers(client)
+
+    for title, complete in [("write tests", True), ("ship feature", True), ("refactor", False)]:
+        r = client.post("/tasks", json={"title": title}, headers=headers)
+        assert r.status_code == 201, r.text
+        if complete:
+            task_id = r.json()["id"]
+            r2 = client.post(f"/tasks/{task_id}/complete", headers=headers)
+            assert r2.status_code == 200
+
+    r = client.get("/analytics/behavior", headers=headers)
+    body = r.json()
+    assert body["source"] == "tasks"
+    assert body["created"] == 3
+    assert body["completed"] == 2
+
+
+def test_clusters_and_skill_graph_endpoints(client):
+    headers = _auth_headers(client)
+
+    texts = [
+        "RAG retrieval çalıştım.",
+        "Embedding modellerini karşılaştırdım.",
+        "Vector search üzerine çalıştım.",
+        "Docker container ayarladım.",
+        "FastAPI endpoint yazdım.",
+        "PostgreSQL sorgusu optimize ettim.",
+    ]
+    for text in texts:
+        r = client.post("/entries", json={"text": text}, headers=headers)
+        assert r.status_code == 201, r.text
+
+    r = client.post("/clusters/rebuild", headers=headers)
+    assert r.status_code == 200, r.text
+
+    r = client.get("/clusters", headers=headers)
+    assert r.status_code == 200
+
+    r = client.get("/analytics/skill-graph", headers=headers)
+    assert r.status_code == 200
+    assert "nodes" in r.json() and "edges" in r.json()

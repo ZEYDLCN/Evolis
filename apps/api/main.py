@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from apps.api.routers import analytics, ask, auth, diff, entries, projects, timeline, versions
+from apps.api.routers import analytics, ask, auth, clusters, diff, entries, projects, tasks, timeline, versions
 from src.database.base import init_db
 
 
@@ -36,6 +36,8 @@ def health() -> dict:
 app.include_router(auth.router)
 app.include_router(entries.router)
 app.include_router(projects.router)
+app.include_router(tasks.router)
+app.include_router(clusters.router)
 app.include_router(timeline.router)
 app.include_router(analytics.router)
 app.include_router(versions.router)

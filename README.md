@@ -33,6 +33,7 @@ Full product spec + architecture decisions: **[docs/ARCHITECTURE.md](docs/ARCHIT
 ```bash
 cp .env.example .env
 pip install -r requirements.txt
+alembic upgrade head        # or skip it — the API also self-creates tables on startup for dev
 uvicorn apps.api.main:app --reload
 ```
 
@@ -91,9 +92,12 @@ docker/         Dockerfiles for api/worker; see docker-compose.yml at the root
 
 ## Status
 
-MVP: daily entry ingestion, structured extraction, interest/skill scoring,
-version snapshots, the diff engine, timeline, and a rule-based Ask LifeDiff
-pipeline (classify → plan → SQL/vector analysis → grounded answer). See
+MVP+: daily entry ingestion, structured extraction, interest/skill scoring,
+version snapshots, the diff engine, timeline, task-based completion
+tracking, semantic clustering with LLM-named topics, a skill progression
+graph, and a rule-based Ask LifeDiff pipeline (classify → plan → SQL/vector
+analysis → grounded answer). Schema is managed with Alembic
+(`alembic upgrade head`). See
 [docs/ARCHITECTURE.md § What's intentionally NOT built yet](docs/ARCHITECTURE.md#8-whats-intentionally-not-built-yet-phase-2--3-per-original-spec)
-for the Phase 2/3 roadmap (Skill Graph, Knowledge Graph, LangGraph agent
-orchestration, automatic cluster naming, monitoring stack, etc).
+for what's still open (real frontend, LangGraph orchestration, monitoring
+stack, Knowledge Graph, etc).

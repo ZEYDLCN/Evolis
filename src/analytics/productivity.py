@@ -1,8 +1,9 @@
 """Behavioral/productivity metrics — sections 13-15.
 
-completion_rate: derived from Entry.completion_status ("done" counts as a
-completed unit of work; "partial"/"blocked"/"none" do not). A dedicated
-tasks table would give a truer count; this is the MVP proxy.
+completion_rate: prefers the Task table (Created/Completed Tasks, section 13)
+for the period; a user who hasn't created any Task rows yet falls back to
+Entry.completion_status ("done" counts as completed, "partial"/"blocked"/
+"none" do not) so the metric is never just empty.
 
 context_switching: average number of distinct topics touched per active day.
 
@@ -15,10 +16,22 @@ import datetime as dt
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from src.database.models import Entry, EntryTopic, FocusSession
+from src.database.models import Entry, EntryTopic, FocusSession, Task
 
 
 def completion_rate(db: Session, user_id: str, start: dt.datetime, end: dt.datetime) -> dict:
+    task_rows = db.execute(
+        select(Task.status, func.count())
+        .where(Task.user_id == user_id, Task.created_at >= start, Task.created_at < end)
+        .group_by(Task.status)
+    ).all()
+    task_counts = {status: n for status, n in task_rows}
+    total_tasks = sum(task_counts.values())
+
+    if total_tasks:
+        done = task_counts.get("done", 0)
+        return {"created": total_tasks, "completed": done, "completion_rate": round(done / total_tasks, 4), "source": "tasks"}
+
     rows = db.execute(
         select(Entry.completion_status, func.count())
         .where(Entry.user_id == user_id, Entry.entry_date >= start, Entry.entry_date < end)
@@ -28,7 +41,7 @@ def completion_rate(db: Session, user_id: str, start: dt.datetime, end: dt.datet
     total = sum(counts.values())
     done = counts.get("done", 0)
     rate = done / total if total else 0.0
-    return {"created": total, "completed": done, "completion_rate": round(rate, 4)}
+    return {"created": total, "completed": done, "completion_rate": round(rate, 4), "source": "entries"}
 
 
 def context_switching_per_day(db: Session, user_id: str, start: dt.datetime, end: dt.datetime) -> float:

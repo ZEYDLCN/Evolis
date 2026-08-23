@@ -14,7 +14,7 @@ from apps.worker.celery_app import celery_app
 from src.database.base import session_scope
 from src.database.models import Embedding, Entry, User
 from src.embeddings.embedding_service import get_embedding_model
-from src.ml.clustering.hdbscan_cluster import cluster_embeddings
+from src.services.cluster_service import rebuild_clusters_for_user
 from src.versions.snapshot import generate_version
 
 
@@ -32,18 +32,7 @@ def embed_entry(entry_id: str) -> None:
 @celery_app.task
 def rebuild_clusters(user_id: str) -> None:
     with session_scope() as db:
-        rows = (
-            db.query(Embedding.entry_id, Embedding.vector)
-            .join(Entry, Entry.id == Embedding.entry_id)
-            .filter(Entry.user_id == user_id)
-            .all()
-        )
-        if len(rows) < 3:
-            return
-        vectors = [r[1] for r in rows]
-        cluster_embeddings(vectors)
-        # Persisting Cluster/EntryTopic.cluster_id assignments is a follow-up
-        # step once topic-name resolution (LLM naming, section 9) is wired in.
+        rebuild_clusters_for_user(db, user_id)
 
 
 @celery_app.task

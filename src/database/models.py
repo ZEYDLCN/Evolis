@@ -3,7 +3,7 @@
 Tables map directly onto the schema sketched in docs/ARCHITECTURE.md (section
 "Database"): users, entries, entry_topics, activities, projects, skills,
 goals, embeddings, clusters, versions, version_metrics, insights,
-focus_sessions.
+focus_sessions, tasks.
 
 Embeddings are stored as JSON float arrays by default so the whole stack runs
 on SQLite with zero setup. When DATABASE_URL points at Postgres and pgvector
@@ -215,6 +215,28 @@ class Insight(Base):
     type: Mapped[str] = mapped_column(String(40))  # pattern | anomaly | release_note | qa
     payload: Mapped[dict] = mapped_column(JSON)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=_now)
+
+
+class Task(Base):
+    """Explicit created/completed task tracking for a truer completion rate
+    than the Entry.completion_status proxy (section 13).
+
+    Optional by design: a user who never creates a Task still gets a
+    completion rate computed from entry status (see
+    src/analytics/productivity.py). Once tasks exist for a period, they take
+    over as the source of truth for that period.
+    """
+
+    __tablename__ = "tasks"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    project_id: Mapped[str | None] = mapped_column(ForeignKey("projects.id"), nullable=True)
+    entry_id: Mapped[str | None] = mapped_column(ForeignKey("entries.id"), nullable=True)
+    title: Mapped[str] = mapped_column(String(300))
+    status: Mapped[str] = mapped_column(String(20), default="open")  # open | done
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=_now)
+    completed_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
 
 
 class FocusSession(Base):

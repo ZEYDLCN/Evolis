@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from apps.api.dependencies import get_current_user
 from src.analytics.interests import topic_interest_scores
 from src.analytics.productivity import behavior_summary
+from src.analytics.skill_graph import build_skill_graph
 from src.analytics.skills import skill_scores
 from src.database.base import get_db
 from src.database.models import User
@@ -35,3 +36,9 @@ def get_skills(months: int = Query(3, ge=1, le=36), user: User = Depends(get_cur
 def get_behavior(months: int = Query(3, ge=1, le=36), user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict:
     start, end = _default_range(months)
     return behavior_summary(db, user.id, start, end)
+
+
+@router.get("/skill-graph")
+def get_skill_graph(months: int = Query(6, ge=1, le=36), user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict:
+    start, end = _default_range(months)
+    return build_skill_graph(db, user.id, start, end)
