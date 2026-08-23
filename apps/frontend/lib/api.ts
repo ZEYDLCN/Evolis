@@ -66,8 +66,12 @@ export const api = {
   loginWithGoogle: (credential: string) =>
     apiFetch<{ access_token: string }>("/auth/google", { method: "POST", body: JSON.stringify({ credential }) }),
 
-  addEntry: (text: string) => apiFetch("/entries", { method: "POST", body: JSON.stringify({ text }) }),
+  addEntry: (text: string) => apiFetch<Entry>("/entries", { method: "POST", body: JSON.stringify({ text }) }),
   listEntries: () => apiFetch<Entry[]>("/entries"),
+
+  streak: () => apiFetch<Streak>("/analytics/streak"),
+  heatmap: (days = 365) => apiFetch<HeatmapDay[]>(`/analytics/heatmap?days=${days}`),
+  onboarding: () => apiFetch<OnboardingStatus>("/analytics/onboarding"),
 
   timeline: () => apiFetch<Record<string, string[]>>("/timeline"),
 
@@ -95,6 +99,12 @@ export const api = {
   ask: (question: string) => apiFetch<AskResult>("/ask", { method: "POST", body: JSON.stringify({ question }) }),
 };
 
+export interface EntryInsight {
+  streak: { current: number; longest: number; is_new_best: boolean };
+  recurring_topics: { topic: string; mentions_this_week: number }[];
+  new_topics: string[];
+}
+
 export interface Entry {
   id: string;
   raw_text: string;
@@ -102,6 +112,32 @@ export interface Entry {
   completion_status: string | null;
   blockers: string[] | null;
   extraction: Record<string, unknown> | null;
+  insight?: EntryInsight | null;
+}
+
+export interface Streak {
+  current_streak: number;
+  longest_streak: number;
+  last_entry_date: string | null;
+  is_new_best: boolean;
+}
+
+export interface HeatmapDay {
+  date: string;
+  count: number;
+}
+
+export interface OnboardingStep {
+  key: string;
+  label: string;
+  done: boolean;
+  progress: number;
+  target: number;
+}
+
+export interface OnboardingStatus {
+  all_done: boolean;
+  steps: OnboardingStep[];
 }
 
 export interface SkillNode {

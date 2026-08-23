@@ -5,6 +5,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
 from apps.api.dependencies import get_current_user
+from src.analytics.entry_insight import build_entry_insight
 from src.database.base import get_db
 from src.database.models import User
 from src.services.entry_service import create_entry
@@ -24,6 +25,7 @@ class EntryResponse(BaseModel):
     completion_status: str | None
     blockers: list[str] | None
     extraction: dict | None
+    insight: dict | None = None  # only populated on creation, not on list
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -31,6 +33,7 @@ class EntryResponse(BaseModel):
 @router.post("", response_model=EntryResponse, status_code=201)
 def add_entry(payload: CreateEntryRequest, user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> EntryResponse:
     entry = create_entry(db, user.id, payload.text, payload.entry_date)
+    insight = build_entry_insight(db, user.id, entry)
     return EntryResponse(
         id=entry.id,
         raw_text=entry.raw_text,
@@ -38,6 +41,7 @@ def add_entry(payload: CreateEntryRequest, user: User = Depends(get_current_user
         completion_status=entry.completion_status,
         blockers=entry.blockers,
         extraction=entry.extraction_raw,
+        insight=insight.to_dict(),
     )
 
 

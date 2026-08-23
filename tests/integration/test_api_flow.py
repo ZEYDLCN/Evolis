@@ -177,6 +177,43 @@ def test_account_export_and_delete(client):
     assert r.status_code == 401
 
 
+def test_entry_creation_returns_insight(client):
+    headers = _auth_headers(client)
+
+    r = client.post("/entries", json={"text": "Bugün LangGraph çalıştım."}, headers=headers)
+    assert r.status_code == 201, r.text
+    insight = r.json()["insight"]
+    assert insight["streak"]["current"] == 1
+    assert "LangGraph" in insight["new_topics"]
+
+
+def test_streak_and_heatmap_and_onboarding_endpoints(client):
+    headers = _auth_headers(client)
+
+    r = client.get("/analytics/streak", headers=headers)
+    assert r.status_code == 200
+    assert r.json()["current_streak"] == 0
+
+    r = client.get("/analytics/onboarding", headers=headers)
+    assert r.status_code == 200
+    assert r.json()["all_done"] is False
+
+    client.post("/entries", json={"text": "RAG üzerine çalıştım."}, headers=headers)
+
+    r = client.get("/analytics/streak", headers=headers)
+    assert r.json()["current_streak"] == 1
+
+    r = client.get("/analytics/heatmap?days=7", headers=headers)
+    assert r.status_code == 200
+    assert len(r.json()) == 7
+    assert sum(day["count"] for day in r.json()) == 1
+
+    r = client.get("/analytics/onboarding", headers=headers)
+    body = r.json()
+    first_step = next(s for s in body["steps"] if s["key"] == "first_entry")
+    assert first_step["done"] is True
+
+
 def test_google_auth_reports_not_configured_by_default(client):
     r = client.get("/auth/google/config")
     assert r.status_code == 200

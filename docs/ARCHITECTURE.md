@@ -132,7 +132,8 @@ POST /projects, GET /projects, GET /projects/{id}/dashboard
 POST /tasks, GET /tasks, POST /tasks/{id}/complete
 GET  /timeline
 GET  /analytics/interests, /analytics/skills, /analytics/behavior,
-     /analytics/skill-graph, /analytics/anomalies, /analytics/patterns
+     /analytics/skill-graph, /analytics/anomalies, /analytics/patterns,
+     /analytics/streak, /analytics/heatmap, /analytics/onboarding
 POST /clusters/rebuild, GET /clusters
 POST /versions/generate, GET /versions
 GET  /diff?base=<label>&target=<label>
@@ -249,6 +250,26 @@ Done since the initial MVP:
   broken flow when it isn't. An email that already has a password account
   gets linked to Google rather than duplicated — either login method keeps
   working afterward.
+- ~~Engagement mechanics~~ (an addition beyond the original spec, aimed
+  squarely at retention — the product spec describes what the analytics
+  compute, not what makes someone come back tomorrow):
+  - `src/analytics/streaks.py`: consecutive-day streak + a GitHub-style
+    zero-filled daily heatmap, pure date-set math over `Entry.entry_date`,
+    no new table. `GET /analytics/streak`, `GET /analytics/heatmap`.
+    Deliberately forgiving: not having logged *yet* today doesn't zero the
+    streak, only a real gap does.
+  - `src/analytics/entry_insight.py`: the reward moment right after saving
+    an entry — this entry's streak, which of today's topics are becoming a
+    weekly pattern (`recurring_topics`), and which are brand new
+    (`new_topics`). Returned inline in `POST /entries`'s response so the
+    frontend doesn't need a second round-trip; rendered as a small
+    celebration card on the Today page instead of a silent list refresh.
+  - `src/analytics/onboarding.py`: a step checklist for new accounts, each
+    step a *real* unlock elsewhere in the product (3 entries is when
+    interest scoring gets interesting, 7 distinct days is when a Version
+    snapshot has something to say, 2 versions is when Diff has something to
+    compare) — not made-up busywork. `GET /analytics/onboarding`; the
+    frontend hides the whole card once every step is done.
 
 Still open:
 - Mobile app, calendar import, git integration — each needs a real

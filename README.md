@@ -113,8 +113,10 @@ semantic clustering with LLM-named topics (+ silhouette/stability quality
 metrics), a skill progression graph, anomaly and pattern detection,
 shareable release notes (text + downloadable SVG card), a computed
 Knowledge Graph export (optional Neo4j sync), opt-in encryption at rest,
-self-service data export/account deletion, Prometheus metrics, a Next.js
-frontend wired to all of it, and Ask Evolis running as a real LangGraph
+self-service data export/account deletion, Prometheus metrics, Sign in
+with Google, retention mechanics (streaks, an activity heatmap, an
+instant post-entry insight, an onboarding checklist), a Next.js frontend
+wired to all of it, and Ask Evolis running as a real LangGraph
 `StateGraph` (classify → plan → SQL/vector analysis → explain → verify →
 grounded answer). Schema is managed with Alembic (`alembic upgrade head`).
 See [docs/ARCHITECTURE.md § What's intentionally NOT built yet](docs/ARCHITECTURE.md#8-whats-intentionally-not-built-yet-phase-2--3-per-original-spec)
