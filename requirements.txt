@@ -1,0 +1,28 @@
+# Core API
+fastapi>=0.115
+uvicorn[standard]>=0.30
+pydantic>=2.7
+email-validator>=2.1
+sqlalchemy>=2.0
+
+# Background jobs
+celery>=5.4
+redis>=5.0
+
+# --- Optional, heavier dependencies ---
+# Install these for production-grade embeddings/clustering/LLM extraction.
+# The app degrades gracefully (deterministic fallbacks) without them, which
+# keeps `pip install -r requirements.txt && uvicorn apps.api.main:app` fast
+# for local dev.
+#
+# anthropic>=0.40          # LLM structured extraction + Ask LifeDiff explanations
+# sentence-transformers>=3.0
+# hdbscan>=0.8
+# scikit-learn>=1.5
+# numpy>=1.26
+# pgvector>=0.3            # only needed when DATABASE_URL is Postgres
+# psycopg[binary]>=3.2     # Postgres driver
+
+# Testing
+pytest>=8.0
+httpx>=0.27
