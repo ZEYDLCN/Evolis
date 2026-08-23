@@ -62,6 +62,8 @@ export const api = {
   skills: (months = 6) => apiFetch<SkillNode[]>(`/analytics/skills?months=${months}`),
   behavior: (months = 3) => apiFetch<Behavior>(`/analytics/behavior?months=${months}`),
   skillGraph: (months = 6) => apiFetch<{ nodes: SkillNode[]; edges: { from: string; to: string }[] }>(`/analytics/skill-graph?months=${months}`),
+  anomalies: () => apiFetch<Anomaly[]>("/analytics/anomalies"),
+  patterns: () => apiFetch<Pattern[]>("/analytics/patterns"),
 
   listProjects: () => apiFetch<Project[]>("/projects"),
   createProject: (name: string) => apiFetch<Project>("/projects", { method: "POST", body: JSON.stringify({ name }) }),
@@ -71,6 +73,11 @@ export const api = {
     apiFetch("/versions/generate", { method: "POST", body: JSON.stringify({ period_start, period_end }) }),
 
   diff: (base: string, target: string) => apiFetch<DiffResult>(`/diff?base=${encodeURIComponent(base)}&target=${encodeURIComponent(target)}`),
+  releaseNotes: (base: string, target: string) =>
+    apiFetch<{ text: string }>(`/release-notes?base=${encodeURIComponent(base)}&target=${encodeURIComponent(target)}`),
+
+  exportData: () => apiFetch<Record<string, unknown>>("/me/export"),
+  deleteAccount: () => apiFetch<void>("/me", { method: "DELETE" }),
 
   ask: (question: string) => apiFetch<AskResult>("/ask", { method: "POST", body: JSON.stringify({ question }) }),
 };
@@ -128,6 +135,20 @@ export interface DiffResult {
   completion_change: number | null;
   deep_work_change: number | null;
   context_switching_change: number | null;
+}
+
+export interface Anomaly {
+  metric: string;
+  current_value: number;
+  baseline_mean: number;
+  z_score: number;
+  ratio: number | null;
+}
+
+export interface Pattern {
+  correlation: number;
+  weeks_observed: number;
+  description: string;
 }
 
 export interface AskResult {

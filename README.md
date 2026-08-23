@@ -95,9 +95,10 @@ docker/         Dockerfiles for api/worker; see docker-compose.yml at the root
 MVP+: daily entry ingestion, structured extraction, interest/skill scoring,
 version snapshots, the diff engine, timeline, task-based completion
 tracking, semantic clustering with LLM-named topics, a skill progression
-graph, a Next.js frontend wired to all of it, and a rule-based Ask LifeDiff
-pipeline (classify → plan → SQL/vector analysis → grounded answer). Schema
-is managed with Alembic (`alembic upgrade head`). See
+graph, anomaly and pattern detection, shareable release notes, self-service
+data export/account deletion, a Next.js frontend wired to all of it, and a
+rule-based Ask LifeDiff pipeline (classify → plan → SQL/vector analysis →
+grounded answer). Schema is managed with Alembic (`alembic upgrade head`). See
 [docs/ARCHITECTURE.md § What's intentionally NOT built yet](docs/ARCHITECTURE.md#8-whats-intentionally-not-built-yet-phase-2--3-per-original-spec)
 for what's still open (LangGraph orchestration, monitoring stack, Knowledge
 Graph, etc).

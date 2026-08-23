@@ -130,11 +130,14 @@ POST /entries, GET /entries
 POST /projects, GET /projects, GET /projects/{id}/dashboard
 POST /tasks, GET /tasks, POST /tasks/{id}/complete
 GET  /timeline
-GET  /analytics/interests, /analytics/skills, /analytics/behavior, /analytics/skill-graph
+GET  /analytics/interests, /analytics/skills, /analytics/behavior,
+     /analytics/skill-graph, /analytics/anomalies, /analytics/patterns
 POST /clusters/rebuild, GET /clusters
 POST /versions/generate, GET /versions
 GET  /diff?base=<label>&target=<label>
+GET  /release-notes?base=<label>&target=<label>
 POST /ask
+GET  /me/export, DELETE /me
 ```
 
 All routes except `/auth/*` and `/health` require a bearer JWT and are
@@ -156,15 +159,34 @@ Done since the initial MVP:
 
 - ~~Frontend wired to the real API~~ — `apps/frontend`: login/register,
   Today (entry capture), Timeline, Diff, Profile (version generation),
-  Projects, Insights (interests/skills/skill-graph/behavior), Ask LifeDiff.
-  Plain `fetch` + `localStorage` JWT, no state library — small enough not to
-  need one yet.
+  Projects, Insights (interests/skills/skill-graph/behavior/anomalies/
+  patterns), Ask LifeDiff. Plain `fetch` + `localStorage` JWT, no state
+  library — small enough not to need one yet.
+- ~~Anomaly Detection~~ (§17) — `src/analytics/anomalies.py`: rolling
+  8-week mean + z-score on weekly learning minutes (overall and per-topic);
+  `GET /analytics/anomalies`
+- ~~Pattern Detection~~ (§16) — `src/analytics/patterns.py`: Pearson
+  correlation between weekly active-project-count and completion rate,
+  reported strictly as association, never causation;
+  `GET /analytics/patterns`
+- ~~Release Notes For You~~ (§28) — `src/versions/release_notes.py` formats
+  an existing `VersionDiff` into the spec's changelog shape (no new numbers,
+  no LLM); `GET /release-notes?base=&target=`, rendered on the frontend's
+  Diff page
+- ~~Privacy: data export + account deletion~~ (§32) —
+  `src/services/account_service.py`; `GET /me/export`, `DELETE /me`
+  (explicit multi-table deletion, not an ORM cascade), wired into the
+  frontend Profile page
 
 Still open, roughly in the order it's worth picking them up:
 - Full LangGraph agent orchestration (current orchestrator is a plain
   function pipeline with the same stage boundaries — see § 6)
 - Prometheus/Grafana/LangSmith wiring (`src/monitoring/` has the seam but is
   currently empty)
+- Golden dataset + AI evaluation harness (§37-38) — extraction/retrieval/
+  clustering/LLM metrics are all still just described in the spec, not
+  implemented
+- Encryption at rest, CI/CD pipeline, production deployment/monitoring stack
 - Knowledge Graph (Neo4j)
 - Mobile app, calendar import, git integration, social share cards
 

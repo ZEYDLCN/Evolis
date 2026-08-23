@@ -4,7 +4,9 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from apps.api.dependencies import get_current_user
+from src.analytics.anomalies import detect_learning_time_anomalies
 from src.analytics.interests import topic_interest_scores
+from src.analytics.patterns import detect_project_load_vs_completion
 from src.analytics.productivity import behavior_summary
 from src.analytics.skill_graph import build_skill_graph
 from src.analytics.skills import skill_scores
@@ -42,3 +44,32 @@ def get_behavior(months: int = Query(3, ge=1, le=36), user: User = Depends(get_c
 def get_skill_graph(months: int = Query(6, ge=1, le=36), user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict:
     start, end = _default_range(months)
     return build_skill_graph(db, user.id, start, end)
+
+
+@router.get("/anomalies")
+def get_anomalies(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[dict]:
+    anomalies = detect_learning_time_anomalies(db, user.id)
+    return [
+        {
+            "metric": a.metric,
+            "current_value": a.current_value,
+            "baseline_mean": round(a.baseline_mean, 1),
+            "z_score": round(a.z_score, 2),
+            "ratio": round(a.ratio, 2) if a.baseline_mean else None,
+        }
+        for a in anomalies
+    ]
+
+
+@router.get("/patterns")
+def get_patterns(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[dict]:
+    finding = detect_project_load_vs_completion(db, user.id)
+    if not finding:
+        return []
+    return [
+        {
+            "correlation": finding.correlation,
+            "weeks_observed": finding.weeks_observed,
+            "description": finding.description,
+        }
+    ]

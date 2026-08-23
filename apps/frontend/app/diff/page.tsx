@@ -18,6 +18,7 @@ export default function DiffPage() {
   const [base, setBase] = useState("");
   const [target, setTarget] = useState("");
   const [diff, setDiff] = useState<DiffResult | null>(null);
+  const [releaseNotes, setReleaseNotes] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -38,12 +39,18 @@ export default function DiffPage() {
     setLoading(true);
     try {
       setDiff(await api.diff(base, target));
+      setReleaseNotes(null);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to compute diff");
       setDiff(null);
     } finally {
       setLoading(false);
     }
+  }
+
+  async function loadReleaseNotes() {
+    const result = await api.releaseNotes(base, target);
+    setReleaseNotes(result.text);
   }
 
   if (!ready) return null;
@@ -90,9 +97,18 @@ export default function DiffPage() {
 
         {diff && (
           <div style={{ marginTop: "1.5rem" }}>
-            <h2 style={{ fontFamily: "monospace", fontSize: 18 }}>
-              YOU v{diff.base} → YOU v{diff.target}
-            </h2>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h2 style={{ fontFamily: "monospace", fontSize: 18, margin: 0 }}>
+                YOU v{diff.base} → YOU v{diff.target}
+              </h2>
+              <button onClick={loadReleaseNotes} style={{ ...button, background: "#eee", color: "#333" }}>
+                Release Notes
+              </button>
+            </div>
+
+            {releaseNotes && (
+              <pre style={{ ...card, whiteSpace: "pre-wrap", fontFamily: "monospace", fontSize: 14, marginTop: 12 }}>{releaseNotes}</pre>
+            )}
 
             {diff.added_topics.length > 0 && (
               <Section title="Added">

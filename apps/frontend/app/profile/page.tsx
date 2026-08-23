@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import NavBar from "../../components/NavBar";
 import { useRequireAuth } from "../../lib/useAuth";
-import { api, Version, ApiError } from "../../lib/api";
+import { api, clearToken, Version, ApiError } from "../../lib/api";
 import { page, card, input, button, mutedText, errorText } from "../../lib/styles";
 
 function isoMonthsAgo(months: number): string {
@@ -14,6 +15,7 @@ function isoMonthsAgo(months: number): string {
 
 export default function ProfilePage() {
   const ready = useRequireAuth();
+  const router = useRouter();
   const [versions, setVersions] = useState<Version[]>([]);
   const [start, setStart] = useState(isoMonthsAgo(1));
   const [end, setEnd] = useState(new Date().toISOString().slice(0, 10));
@@ -46,6 +48,24 @@ export default function ProfilePage() {
     } finally {
       setGenerating(false);
     }
+  }
+
+  async function exportData() {
+    const data = await api.exportData();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "lifediff-export.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function deleteAccount() {
+    if (!confirm("This permanently deletes your account and all data. Continue?")) return;
+    await api.deleteAccount();
+    clearToken();
+    router.push("/login");
   }
 
   if (!ready) return null;
@@ -90,6 +110,16 @@ export default function ProfilePage() {
             </div>
           ))
         )}
+
+        <h2 style={{ fontSize: 18, marginTop: "2rem" }}>Privacy</h2>
+        <div style={{ ...card, display: "flex", gap: 12 }}>
+          <button onClick={exportData} style={{ ...button, background: "#eee", color: "#333" }}>
+            Export my data
+          </button>
+          <button onClick={deleteAccount} style={{ ...button, background: "#c0392b" }}>
+            Delete account
+          </button>
+        </div>
       </main>
     </>
   );

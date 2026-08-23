@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import NavBar from "../../components/NavBar";
 import { useRequireAuth } from "../../lib/useAuth";
-import { api, Behavior, SkillNode } from "../../lib/api";
+import { api, Anomaly, Behavior, Pattern, SkillNode } from "../../lib/api";
 import { page, card, mutedText } from "../../lib/styles";
 
 function Bar({ label, value }: { label: string; value: number }) {
@@ -26,17 +26,23 @@ export default function InsightsPage() {
   const [skills, setSkills] = useState<SkillNode[]>([]);
   const [behavior, setBehavior] = useState<Behavior | null>(null);
   const [graph, setGraph] = useState<{ nodes: SkillNode[]; edges: { from: string; to: string }[] }>({ nodes: [], edges: [] });
+  const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
+  const [patterns, setPatterns] = useState<Pattern[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!ready) return;
-    Promise.all([api.interests(), api.skills(), api.behavior(), api.skillGraph()]).then(([i, s, b, g]) => {
-      setInterests(i);
-      setSkills(s);
-      setBehavior(b);
-      setGraph(g);
-      setLoading(false);
-    });
+    Promise.all([api.interests(), api.skills(), api.behavior(), api.skillGraph(), api.anomalies(), api.patterns()]).then(
+      ([i, s, b, g, a, p]) => {
+        setInterests(i);
+        setSkills(s);
+        setBehavior(b);
+        setGraph(g);
+        setAnomalies(a);
+        setPatterns(p);
+        setLoading(false);
+      }
+    );
   }, [ready]);
 
   if (!ready) return null;
@@ -92,6 +98,29 @@ export default function InsightsPage() {
             <div>Context Switching: {behavior.context_switching_per_day}/day</div>
           </div>
         )}
+
+        <h2 style={{ fontSize: 18 }}>Unusual Activity</h2>
+        <div style={card}>
+          {anomalies.length === 0 ? (
+            <p style={mutedText}>Nothing unusual this week.</p>
+          ) : (
+            anomalies.map((a) => (
+              <div key={a.metric} style={{ marginBottom: 6 }}>
+                <strong>{a.metric}</strong> is {a.ratio ? `${a.ratio.toFixed(1)}x` : ""} your 8-week average
+                ({Math.round(a.current_value)} vs ~{Math.round(a.baseline_mean)} min).
+              </div>
+            ))
+          )}
+        </div>
+
+        <h2 style={{ fontSize: 18 }}>Patterns</h2>
+        <div style={card}>
+          {patterns.length === 0 ? (
+            <p style={mutedText}>No strong associations detected yet.</p>
+          ) : (
+            patterns.map((p, i) => <p key={i}>{p.description}</p>)
+          )}
+        </div>
       </main>
     </>
   );
