@@ -61,7 +61,7 @@ def test_metrics_endpoint_reflects_traffic(client):
     client.get("/health")
     r = client.get("/metrics")
     assert r.status_code == 200
-    assert "lifediff_http_requests_total" in r.text
+    assert "evolis_http_requests_total" in r.text
     assert 'path="/health"' in r.text
 
 

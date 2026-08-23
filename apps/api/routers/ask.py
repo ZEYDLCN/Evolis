@@ -15,5 +15,5 @@ class AskRequest(BaseModel):
 
 
 @router.post("")
-def ask_lifediff(payload: AskRequest, user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict:
+def ask_evolis(payload: AskRequest, user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict:
     return ask(db, user.id, payload.question)

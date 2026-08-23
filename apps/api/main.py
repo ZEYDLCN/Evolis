@@ -16,7 +16,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="LifeDiff API",
+    title="Evolis API",
     description="Version control for your life — AI-powered personal evolution analytics.",
     version="0.1.0",
     lifespan=lifespan,

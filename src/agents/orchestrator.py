@@ -1,4 +1,4 @@
-"""Ask LifeDiff — end-to-end pipeline (section 21-22).
+"""Ask Evolis — end-to-end pipeline (section 21-22).
 
     Question -> Classifier -> Planner -> Analyst (SQL + vector search)
              -> LLM Explanation -> Verifier -> Answer
@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 
 from src.monitoring.metrics import llm_calls_total
 
-EXPLAIN_SYSTEM_PROMPT = """You are LifeDiff's analyst voice. You are given a
+EXPLAIN_SYSTEM_PROMPT = """You are Evolis's analyst voice. You are given a
 user's question and a JSON payload of pre-computed analytics (interest
 scores, skill scores, behavior metrics, retrieved past entries). Answer the
 question using ONLY numbers present in the payload — never invent a

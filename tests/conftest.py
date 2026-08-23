@@ -9,5 +9,5 @@ whole test session.
 import os
 import tempfile
 
-_db_dir = tempfile.mkdtemp(prefix="lifediff-test-")
+_db_dir = tempfile.mkdtemp(prefix="evolis-test-")
 os.environ.setdefault("DATABASE_URL", f"sqlite:///{_db_dir}/test.db")

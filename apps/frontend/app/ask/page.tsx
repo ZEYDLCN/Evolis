@@ -4,7 +4,7 @@ import { useState } from "react";
 import NavBar from "../../components/NavBar";
 import { useRequireAuth } from "../../lib/useAuth";
 import { api, AskResult, ApiError } from "../../lib/api";
-import { page, card, input, button, mutedText, errorText, pill } from "../../lib/styles";
+import { page, card, input, button, brand, mutedText, errorText, pill } from "../../lib/styles";
 
 const SUGGESTIONS = [
   "Son 6 ayda nasıl değiştim?",
@@ -39,7 +39,7 @@ export default function AskPage() {
     <>
       <NavBar />
       <main style={page}>
-        <h1>Ask LifeDiff</h1>
+        <h1>Ask Evolis</h1>
         <p style={mutedText}>Ask a question about your own history — every number in the answer is computed, not guessed.</p>
 
         <form
@@ -63,7 +63,7 @@ export default function AskPage() {
                 setQuestion(s);
                 ask(s);
               }}
-              style={{ ...pill, background: "#f0f0f0", cursor: "pointer" }}
+              style={{ ...pill, background: brand.surfaceTint, border: `1px solid ${brand.borderTint}`, cursor: "pointer" }}
             >
               {s}
             </span>
@@ -74,7 +74,7 @@ export default function AskPage() {
 
         {result && (
           <div style={card}>
-            <div style={{ ...pill, background: "#e8f0fe", marginBottom: 12 }}>{result.query_class}</div>
+            <div style={{ ...pill, background: brand.limeTint, color: brand.deepForest, marginBottom: 12 }}>{result.query_class}</div>
             <p style={{ fontSize: 16 }}>{result.answer}</p>
             <p style={mutedText}>{result.grounded ? "✓ Grounded in your computed analytics" : ""}</p>
           </div>

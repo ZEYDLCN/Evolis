@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, setToken, ApiError } from "../../lib/api";
-import { page, card, input, button, errorText, mutedText } from "../../lib/styles";
+import { page, card, input, button, buttonSecondary, brand, errorText, mutedText } from "../../lib/styles";
+import EvolisLogo from "../../components/EvolisLogo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -30,31 +31,22 @@ export default function LoginPage() {
 
   return (
     <main style={{ ...page, maxWidth: 420, paddingTop: "4rem" }}>
-      <h1 style={{ marginBottom: 4 }}>LifeDiff</h1>
-      <p style={mutedText}>Version Control for Your Life</p>
+      <EvolisLogo size={44} showTagline />
 
       <form onSubmit={submit} style={{ ...card, marginTop: "2rem" }}>
         <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-          <button
-            type="button"
-            onClick={() => setMode("login")}
-            style={{ ...button, background: mode === "login" ? "#111" : "#eee", color: mode === "login" ? "#fff" : "#333" }}
-          >
+          <button type="button" onClick={() => setMode("login")} style={mode === "login" ? button : buttonSecondary}>
             Log in
           </button>
-          <button
-            type="button"
-            onClick={() => setMode("register")}
-            style={{ ...button, background: mode === "register" ? "#111" : "#eee", color: mode === "register" ? "#fff" : "#333" }}
-          >
+          <button type="button" onClick={() => setMode("register")} style={mode === "register" ? button : buttonSecondary}>
             Register
           </button>
         </div>
 
-        <label style={{ fontSize: 13, color: "#666" }}>Email</label>
+        <label style={{ fontSize: 13, color: brand.mutedGreen }}>Email</label>
         <input style={{ ...input, marginBottom: 12, marginTop: 4 }} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
 
-        <label style={{ fontSize: 13, color: "#666" }}>Password</label>
+        <label style={{ fontSize: 13, color: brand.mutedGreen }}>Password</label>
         <input
           style={{ ...input, marginBottom: 16, marginTop: 4 }}
           type="password"

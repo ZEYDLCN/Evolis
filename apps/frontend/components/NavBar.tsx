@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { clearToken } from "../lib/api";
+import { brand } from "../lib/styles";
+import EvolisLogo from "./EvolisLogo";
 
 const LINKS = [
   { href: "/today", label: "Today" },
@@ -11,19 +13,19 @@ const LINKS = [
   { href: "/profile", label: "Profile" },
   { href: "/projects", label: "Projects" },
   { href: "/insights", label: "Insights" },
-  { href: "/ask", label: "Ask LifeDiff" },
+  { href: "/ask", label: "Ask Evolis" },
 ];
 
 export default function NavBar() {
   const router = useRouter();
 
   return (
-    <header style={{ borderBottom: "1px solid #eee", marginBottom: "2rem" }}>
+    <header style={{ borderBottom: `1px solid ${brand.borderTint}`, marginBottom: "2rem", background: "#ffffff" }}>
       <div
         style={{
           maxWidth: 900,
           margin: "0 auto",
-          padding: "1rem 1.5rem",
+          padding: "0.75rem 1.5rem",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -31,12 +33,12 @@ export default function NavBar() {
           gap: 12,
         }}
       >
-        <Link href="/" style={{ fontWeight: 700, textDecoration: "none", color: "#111" }}>
-          LifeDiff
+        <Link href="/" style={{ textDecoration: "none" }}>
+          <EvolisLogo size={32} />
         </Link>
-        <nav style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+        <nav style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
           {LINKS.map((l) => (
-            <Link key={l.href} href={l.href} style={{ fontSize: 14, color: "#444", textDecoration: "none" }}>
+            <Link key={l.href} href={l.href} style={{ fontSize: 14, color: brand.deepForest, textDecoration: "none" }}>
               {l.label}
             </Link>
           ))}
@@ -45,7 +47,7 @@ export default function NavBar() {
               clearToken();
               router.push("/login");
             }}
-            style={{ fontSize: 14, background: "none", border: "none", color: "#999", cursor: "pointer" }}
+            style={{ fontSize: 14, background: "none", border: "none", color: brand.mutedGreen, cursor: "pointer" }}
           >
             Log out
           </button>

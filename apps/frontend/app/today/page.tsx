@@ -4,13 +4,13 @@ import { useEffect, useState } from "react";
 import NavBar from "../../components/NavBar";
 import { useRequireAuth } from "../../lib/useAuth";
 import { api, Entry } from "../../lib/api";
-import { page, card, input, button, mutedText, pill } from "../../lib/styles";
+import { page, card, input, button, brand, mutedText, pill } from "../../lib/styles";
 
 const STATUS_COLOR: Record<string, string> = {
-  done: "#e6f4ea",
-  partial: "#fff4e0",
-  blocked: "#fde8e8",
-  none: "#f0f0f0",
+  done: "#E3F3EA",
+  partial: "#FFF4E0",
+  blocked: "#FBE7E7",
+  none: brand.surfaceTint,
 };
 
 export default function TodayPage() {
@@ -53,7 +53,7 @@ export default function TodayPage() {
       <NavBar />
       <main style={page}>
         <h1>Today</h1>
-        <p style={mutedText}>What did you do today? Write it in one paragraph — LifeDiff extracts the structure.</p>
+        <p style={mutedText}>What did you do today? Write it in one paragraph — Evolis extracts the structure.</p>
 
         <form onSubmit={submit} style={card}>
           <textarea
@@ -92,7 +92,7 @@ export default function TodayPage() {
               {e.extraction && Array.isArray((e.extraction as { topics?: string[] }).topics) && (
                 <div style={{ marginTop: 10 }}>
                   {((e.extraction as { topics?: string[] }).topics || []).map((t) => (
-                    <span key={t} style={{ ...pill, background: "#f0f0f0" }}>
+                    <span key={t} style={pill}>
                       {t}
                     </span>
                   ))}

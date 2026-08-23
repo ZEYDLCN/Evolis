@@ -1,4 +1,4 @@
-"""Ask LifeDiff as an actual LangGraph StateGraph — section 22.
+"""Ask Evolis as an actual LangGraph StateGraph — section 22.
 
 Same five stages as the original plain-function pipeline
 (src/agents/orchestrator.py), now wired as graph nodes:

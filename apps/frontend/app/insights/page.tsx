@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import NavBar from "../../components/NavBar";
 import { useRequireAuth } from "../../lib/useAuth";
 import { api, Anomaly, Behavior, Pattern, SkillNode } from "../../lib/api";
-import { page, card, mutedText } from "../../lib/styles";
+import { page, card, brand, mutedText } from "../../lib/styles";
 
 function Bar({ label, value }: { label: string; value: number }) {
   return (
@@ -13,8 +13,8 @@ function Bar({ label, value }: { label: string; value: number }) {
         <span>{label}</span>
         <span style={mutedText}>{(value * 100).toFixed(0)}%</span>
       </div>
-      <div style={{ background: "#f0f0f0", borderRadius: 6, height: 8 }}>
-        <div style={{ width: `${Math.min(value, 1) * 100}%`, background: "#111", borderRadius: 6, height: 8 }} />
+      <div style={{ background: brand.surfaceTint, borderRadius: 6, height: 8 }}>
+        <div style={{ width: `${Math.min(value, 1) * 100}%`, background: brand.emerald, borderRadius: 6, height: 8 }} />
       </div>
     </div>
   );

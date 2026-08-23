@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import NavBar from "../../components/NavBar";
 import { useRequireAuth } from "../../lib/useAuth";
 import { api, clearToken, Version, ApiError } from "../../lib/api";
-import { page, card, input, button, mutedText, errorText } from "../../lib/styles";
+import { page, card, input, button, buttonSecondary, brand, mutedText, errorText } from "../../lib/styles";
 
 function isoMonthsAgo(months: number): string {
   const d = new Date();
@@ -56,7 +56,7 @@ export default function ProfilePage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "lifediff-export.json";
+    a.download = "evolis-export.json";
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -81,11 +81,11 @@ export default function ProfilePage() {
           <strong>Generate a new version</strong>
           <div style={{ display: "flex", gap: 12, marginTop: 12, flexWrap: "wrap" }}>
             <div style={{ flex: 1, minWidth: 140 }}>
-              <label style={{ fontSize: 13, color: "#666" }}>Period start</label>
+              <label style={{ fontSize: 13, color: brand.mutedGreen }}>Period start</label>
               <input style={input} type="date" value={start} onChange={(e) => setStart(e.target.value)} />
             </div>
             <div style={{ flex: 1, minWidth: 140 }}>
-              <label style={{ fontSize: 13, color: "#666" }}>Period end</label>
+              <label style={{ fontSize: 13, color: brand.mutedGreen }}>Period end</label>
               <input style={input} type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
             </div>
           </div>
@@ -113,7 +113,7 @@ export default function ProfilePage() {
 
         <h2 style={{ fontSize: 18, marginTop: "2rem" }}>Privacy</h2>
         <div style={{ ...card, display: "flex", gap: 12 }}>
-          <button onClick={exportData} style={{ ...button, background: "#eee", color: "#333" }}>
+          <button onClick={exportData} style={buttonSecondary}>
             Export my data
           </button>
           <button onClick={deleteAccount} style={{ ...button, background: "#c0392b" }}>

@@ -3,7 +3,7 @@
 Defaults to SQLite for zero-config local development. Set DATABASE_URL to a
 PostgreSQL (+ pgvector) DSN for anything beyond local experimentation, e.g.:
 
-    postgresql+psycopg://lifediff:lifediff@localhost:5432/lifediff
+    postgresql+psycopg://evolis:evolis@localhost:5432/evolis
 """
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from typing import Iterator
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./lifediff.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./evolis.db")
 
 _connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
 

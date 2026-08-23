@@ -2,7 +2,7 @@
 
 Time-range extraction is intentionally simple (last N months / "this year" /
 default lookback) rather than a full NL date parser; good enough for the Ask
-LifeDiff MVP and easy to extend.
+Evolis MVP and easy to extend.
 """
 from __future__ import annotations
 

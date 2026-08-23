@@ -1,4 +1,4 @@
-"""ORM models for LifeDiff.
+"""ORM models for Evolis.
 
 Tables map directly onto the schema sketched in docs/ARCHITECTURE.md (section
 "Database"): users, entries, entry_topics, activities, projects, skills,

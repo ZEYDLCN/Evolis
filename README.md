@@ -1,9 +1,14 @@
-# LifeDiff
+# Evolis
 
-> **Version Control for Your Life**
-> LifeDiff turns your daily activity into a version history of yourself.
+> **Personal Evolution Intelligence**
+> Evolis turns your daily activity into a version history of yourself.
 
-LifeDiff is an AI-powered personal evolution analytics platform. You write a
+Brand assets live in `apps/frontend/public/brand/` (icon, monochrome icon,
+horizontal wordmark). Palette: Deep Forest `#0B2A1E`, Emerald `#168B62`,
+Mid Green `#4AAE70`, Lime Accent `#C7F36A` — see
+`apps/frontend/lib/styles.ts` for the tokens the whole frontend is built on.
+
+Evolis is an AI-powered personal evolution analytics platform. You write a
 short natural-language entry about your day; it extracts structured
 activity, tracks your interests and skills over time, and shows how you
 change — as a version diff, not a habit-tracker streak.
@@ -109,7 +114,7 @@ metrics), a skill progression graph, anomaly and pattern detection,
 shareable release notes (text + downloadable SVG card), a computed
 Knowledge Graph export (optional Neo4j sync), opt-in encryption at rest,
 self-service data export/account deletion, Prometheus metrics, a Next.js
-frontend wired to all of it, and Ask LifeDiff running as a real LangGraph
+frontend wired to all of it, and Ask Evolis running as a real LangGraph
 `StateGraph` (classify → plan → SQL/vector analysis → explain → verify →
 grounded answer). Schema is managed with Alembic (`alembic upgrade head`).
 See [docs/ARCHITECTURE.md § What's intentionally NOT built yet](docs/ARCHITECTURE.md#8-whats-intentionally-not-built-yet-phase-2--3-per-original-spec)
@@ -126,6 +131,6 @@ npm run dev   # http://localhost:3000, expects the API at NEXT_PUBLIC_API_URL (d
 Screens: Login/Register, Today (daily check-in), Timeline, Diff (+ Release
 Notes and a downloadable share card), Profile (version generation, data
 export/account deletion), Projects, Insights (interests/skills/skill graph/
-behavior/anomalies/patterns), Ask LifeDiff. Auth token lives in
+behavior/anomalies/patterns), Ask Evolis. Auth token lives in
 `localStorage`; no state library — plain `fetch` calls through
 `apps/frontend/lib/api.ts`.

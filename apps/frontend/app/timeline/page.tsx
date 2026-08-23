@@ -40,7 +40,7 @@ export default function TimelinePage() {
               <strong>{month}</strong>
               <div style={{ marginTop: 10 }}>
                 {timeline[month].map((topic) => (
-                  <span key={topic} style={{ ...pill, background: "#f0f0f0" }}>
+                  <span key={topic} style={pill}>
                     {topic}
                   </span>
                 ))}

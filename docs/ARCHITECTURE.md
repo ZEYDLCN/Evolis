@@ -1,6 +1,6 @@
-# LifeDiff — Architecture & Product Notes
+# Evolis — Architecture & Product Notes
 
-> **LifeDiff turns your daily activity into a version history of yourself.**
+> **Evolis turns your daily activity into a version history of yourself.**
 
 This document is the working reference for what's built and why. It's the
 expanded, implementation-facing version of the original product spec.
@@ -16,7 +16,7 @@ Daily natural-language entry
         -> Temporal aggregation        (weekly/monthly rollups)
         -> Version snapshot            (a "YOU vX.Y")
         -> Diff engine                 (snapshot A vs snapshot B)
-        -> Dashboard / Release Notes / Ask LifeDiff
+        -> Dashboard / Release Notes / Ask Evolis
 ```
 
 ## 2. The one rule everything else follows
@@ -57,7 +57,7 @@ src/
   analytics/      interests / skills / productivity / temporal aggregation (SQL-backed)
   versions/       snapshot generation + diff engine
   rag/            hybrid (vector + keyword) retrieval over past entries
-  agents/         Ask LifeDiff pipeline: classifier -> planner -> analyst -> verifier
+  agents/         Ask Evolis pipeline: classifier -> planner -> analyst -> verifier
   services/       auth, entry ingestion, project rollups
   monitoring/     metrics hooks (Prometheus-shaped, see section 8)
 tests/
@@ -103,13 +103,13 @@ Anthropic key, no sentence-transformers download, no HDBSCAN):
 | Clustering | HDBSCAN | K-Means, then no-op if scikit-learn is missing |
 | Cluster naming | Claude API | Most frequent topic strings in the cluster (`" & "`-joined) |
 | Anomaly detection | Isolation Forest | Rolling mean + z-score (always available) |
-| Ask LifeDiff explanation | Claude API | Template built from the analysis payload |
+| Ask Evolis explanation | Claude API | Template built from the analysis payload |
 
 This is a deliberate trade for an early-stage repo: correctness of the
 *pipeline shape* now, swap in real models as they're wired up, without a
 rewrite.
 
-## 6. Ask LifeDiff pipeline
+## 6. Ask Evolis pipeline
 
 ```
 Question -> classify_query() -> build_plan() -> run_analysis()
@@ -163,7 +163,7 @@ Done since the initial MVP:
 - ~~Frontend wired to the real API~~ — `apps/frontend`: login/register,
   Today (entry capture), Timeline, Diff, Profile (version generation),
   Projects, Insights (interests/skills/skill-graph/behavior/anomalies/
-  patterns), Ask LifeDiff. Plain `fetch` + `localStorage` JWT, no state
+  patterns), Ask Evolis. Plain `fetch` + `localStorage` JWT, no state
   library — small enough not to need one yet.
 - ~~Anomaly Detection~~ (§17) — `src/analytics/anomalies.py`: rolling
   8-week mean + z-score on weekly learning minutes (overall and per-topic);
@@ -193,7 +193,7 @@ Done since the initial MVP:
   latest migration) then the full pytest suite; frontend job runs
   `next build` (typecheck + static generation) on every push/PR to `main`
 - ~~Full LangGraph agent orchestration~~ — `src/agents/graph.py`: Ask
-  LifeDiff runs as a real `StateGraph` (classify → plan → analyze → explain
+  Evolis runs as a real `StateGraph` (classify → plan → analyze → explain
   → verify → END), compiled once and cached. `orchestrator.ask()` is still
   the stable entry point the API calls. Fixing the graph's own tests
   surfaced and fixed a real classifier bug: `\b...\b` word-boundary regexes
@@ -231,6 +231,13 @@ Done since the initial MVP:
   pushes it into a real Neo4j instance when `NEO4J_URI` is set and the
   `neo4j` driver is installed — `POST /graph/sync` reports honestly when it
   skipped rather than pretending to have synced.
+- ~~Brand identity~~ — the product's own logo (`apps/frontend/public/brand/`:
+  icon, monochrome icon, horizontal wordmark) and green palette (Deep Forest
+  `#0B2A1E`, Emerald `#168B62`, Mid Green `#4AAE70`, Lime Accent `#C7F36A`)
+  are wired through `apps/frontend/lib/styles.ts` as shared tokens, so every
+  page, the favicon (`app/icon.svg`), and the generated release-notes share
+  card (`src/versions/share_card.py`) draw from one palette instead of
+  each inventing its own.
 
 Still open:
 - Mobile app, calendar import, git integration — each needs a real

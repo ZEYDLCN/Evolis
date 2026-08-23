@@ -1,0 +1,36 @@
+<svg width="1200" height="320" viewBox="0 0 1200 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g1" x1="58" y1="54" x2="252" y2="118" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#C7F36A"/>
+      <stop offset="1" stop-color="#4AAE70"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="58" y1="121" x2="252" y2="183" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#168B62"/>
+      <stop offset="1" stop-color="#5DBA7E"/>
+    </linearGradient>
+    <linearGradient id="g3" x1="58" y1="188" x2="252" y2="256" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B2A1E"/>
+      <stop offset="1" stop-color="#69B968"/>
+    </linearGradient>
+  </defs>
+
+  <g transform="translate(24 12) scale(.58)">
+    <path d="M137 119C163 84 201 68 245 68H389C391 109 368 132 329 132H243C207 132 178 145 157 170L137 194V119Z" fill="url(#g1)"/>
+    <path d="M137 213C163 178 201 162 245 162H389C391 203 368 226 329 226H243C207 226 178 239 157 264L137 288V213Z" fill="url(#g2)"/>
+    <path d="M137 307C162 274 200 256 243 256H324C365 256 389 279 389 320H251C221 320 198 330 180 350C194 372 219 384 253 384H345C374 384 392 400 398 433H249C184 433 137 393 137 334V307Z" fill="url(#g3)"/>
+  </g>
+
+  <text x="315" y="164"
+        fill="#0B2A1E"
+        font-family="Inter, Manrope, Arial, sans-serif"
+        font-size="112"
+        font-weight="500"
+        letter-spacing="10">EVOLIS</text>
+
+  <text x="320" y="220"
+        fill="#168B62"
+        font-family="Inter, Manrope, Arial, sans-serif"
+        font-size="24"
+        font-weight="600"
+        letter-spacing="7">PERSONAL EVOLUTION INTELLIGENCE</text>
+</svg>

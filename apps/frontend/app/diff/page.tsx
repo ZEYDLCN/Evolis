@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import NavBar from "../../components/NavBar";
 import { useRequireAuth } from "../../lib/useAuth";
 import { api, fetchSvg, Version, DiffResult, ApiError } from "../../lib/api";
-import { page, card, button, mutedText, errorText, pill } from "../../lib/styles";
+import { page, card, button, buttonSecondary, brand, mutedText, errorText, pill } from "../../lib/styles";
 
 function pct(x: number | null): string {
   if (x === null) return "—";
@@ -66,7 +66,7 @@ export default function DiffPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `lifediff-v${base}-v${target}.svg`;
+    a.download = `evolis-v${base}-v${target}.svg`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -85,7 +85,7 @@ export default function DiffPage() {
         ) : (
           <form onSubmit={runDiff} style={{ ...card, display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap" }}>
             <div>
-              <label style={{ fontSize: 13, color: "#666", display: "block" }}>Base</label>
+              <label style={{ fontSize: 13, color: brand.mutedGreen, display: "block" }}>Base</label>
               <select value={base} onChange={(e) => setBase(e.target.value)}>
                 {versions.map((v) => (
                   <option key={v.id} value={v.label}>
@@ -96,7 +96,7 @@ export default function DiffPage() {
             </div>
             <span style={mutedText}>→</span>
             <div>
-              <label style={{ fontSize: 13, color: "#666", display: "block" }}>Target</label>
+              <label style={{ fontSize: 13, color: brand.mutedGreen, display: "block" }}>Target</label>
               <select value={target} onChange={(e) => setTarget(e.target.value)}>
                 {versions.map((v) => (
                   <option key={v.id} value={v.label}>
@@ -120,10 +120,10 @@ export default function DiffPage() {
                 YOU v{diff.base} → YOU v{diff.target}
               </h2>
               <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={loadReleaseNotes} style={{ ...button, background: "#eee", color: "#333" }}>
+                <button onClick={loadReleaseNotes} style={buttonSecondary}>
                   Release Notes
                 </button>
-                <button onClick={loadShareCard} style={{ ...button, background: "#eee", color: "#333" }}>
+                <button onClick={loadShareCard} style={buttonSecondary}>
                   Share Card
                 </button>
               </div>
@@ -145,7 +145,7 @@ export default function DiffPage() {
             {diff.added_topics.length > 0 && (
               <Section title="Added">
                 {diff.added_topics.map((t) => (
-                  <span key={t} style={{ ...pill, background: "#e6f4ea" }}>
+                  <span key={t} style={{ ...pill, background: "#E3F3EA", color: brand.deepForest }}>
                     + {t}
                   </span>
                 ))}
@@ -155,7 +155,7 @@ export default function DiffPage() {
             {diff.emerging_topics.length > 0 && (
               <Section title="Emerging Interest">
                 {diff.emerging_topics.map((t) => (
-                  <span key={t} style={{ ...pill, background: "#e8f0fe" }}>
+                  <span key={t} style={{ ...pill, background: brand.limeTint, color: brand.deepForest }}>
                     → {t}
                   </span>
                 ))}
@@ -183,7 +183,7 @@ export default function DiffPage() {
             {diff.dormant_topics.length > 0 && (
               <Section title="Dormant">
                 {diff.dormant_topics.map((t) => (
-                  <span key={t} style={{ ...pill, background: "#f0f0f0" }}>
+                  <span key={t} style={pill}>
                     - {t}
                   </span>
                 ))}
@@ -210,7 +210,7 @@ export default function DiffPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: "1.25rem" }}>
-      <h3 style={{ fontSize: 15, color: "#666", marginBottom: 8 }}>{title}</h3>
+      <h3 style={{ fontSize: 15, color: brand.mutedGreen, marginBottom: 8 }}>{title}</h3>
       <div>{children}</div>
     </div>
   );

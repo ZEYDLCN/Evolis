@@ -15,7 +15,7 @@ def test_svg_is_well_formed_and_contains_content():
 
     assert svg.startswith("<svg")
     assert svg.strip().endswith("</svg>")
-    assert "LifeDiff" in svg
+    assert "EVOLIS" in svg
     assert "YOU v1.4" in svg
     assert "LangGraph" in svg
 

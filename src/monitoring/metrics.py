@@ -15,36 +15,36 @@ from contextlib import contextmanager
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 
 http_requests_total = Counter(
-    "lifediff_http_requests_total",
+    "evolis_http_requests_total",
     "Total HTTP requests handled",
     ["method", "path", "status_code"],
 )
 
 http_request_duration_seconds = Histogram(
-    "lifediff_http_request_duration_seconds",
+    "evolis_http_request_duration_seconds",
     "HTTP request latency",
     ["method", "path"],
 )
 
 llm_calls_total = Counter(
-    "lifediff_llm_calls_total",
+    "evolis_llm_calls_total",
     "LLM API calls, by purpose and outcome",
     ["purpose", "outcome"],  # purpose: extraction | cluster_naming | ask_explain ; outcome: success | error | fallback
 )
 
 embedding_generation_seconds = Histogram(
-    "lifediff_embedding_generation_seconds",
+    "evolis_embedding_generation_seconds",
     "Time spent generating a single embedding",
 )
 
 background_job_seconds = Histogram(
-    "lifediff_background_job_seconds",
+    "evolis_background_job_seconds",
     "Background job runtime",
     ["job_name"],
 )
 
 background_job_errors_total = Counter(
-    "lifediff_background_job_errors_total",
+    "evolis_background_job_errors_total",
     "Background job failures",
     ["job_name"],
 )
