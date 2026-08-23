@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from src.database.encryption import encryption_enabled
 from src.database.models import Embedding, Entry
 from src.embeddings.embedding_service import cosine_similarity, get_embedding_model
 
@@ -42,6 +43,16 @@ def vector_search(db: Session, user_id: str, query: str, top_k: int = 5) -> list
 
 
 def keyword_search(db: Session, user_id: str, query: str, top_k: int = 5) -> list[RetrievedEntry]:
+    if encryption_enabled():
+        # raw_text is ciphertext in the database when ENCRYPTION_KEY is set,
+        # so SQL LIKE can't match it — decrypt this user's own rows (ORM does
+        # this transparently) and filter in Python instead. Fine at
+        # personal-analytics scale; see src/database/encryption.py.
+        needle = query.lower()
+        rows = db.query(Entry.id, Entry.raw_text).filter(Entry.user_id == user_id).all()
+        matches = [r for r in rows if needle in r[1].lower()][:top_k]
+        return [RetrievedEntry(entry_id=r[0], text=r[1], score=1.0) for r in matches]
+
     like_pattern = f"%{query}%"
     rows = db.execute(
         select(Entry.id, Entry.raw_text)

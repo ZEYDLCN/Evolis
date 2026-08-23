@@ -139,6 +139,25 @@ def test_release_notes_endpoint(client):
     assert r.status_code == 200
     assert "text" in r.json()
 
+    r = client.get(f"/release-notes/card?base={label}&target={label2}", headers=headers)
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("image/svg+xml")
+    assert r.text.startswith("<svg")
+
+
+def test_knowledge_graph_endpoints(client):
+    headers = _auth_headers(client)
+    client.post("/entries", json={"text": "LangGraph ile RAG pipeline geliştirdim."}, headers=headers)
+
+    r = client.get("/graph/export", headers=headers)
+    assert r.status_code == 200
+    body = r.json()
+    assert "nodes" in body and "relationships" in body
+
+    r = client.post("/graph/sync", headers=headers)
+    assert r.status_code == 200
+    assert r.json()["synced"] is False  # NEO4J_URI not configured in tests
+
 
 def test_account_export_and_delete(client):
     headers = _auth_headers(client)

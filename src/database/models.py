@@ -29,6 +29,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
+from .encryption import EncryptedText
 
 USE_PGVECTOR = os.getenv("EMBEDDING_BACKEND", "json") == "pgvector"
 
@@ -70,7 +71,7 @@ class Entry(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
-    raw_text: Mapped[str] = mapped_column(Text)
+    raw_text: Mapped[str] = mapped_column(EncryptedText)
     entry_date: Mapped[dt.date] = mapped_column(DateTime, default=_now)
     completion_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
     blockers: Mapped[list | None] = mapped_column(JSON, nullable=True)

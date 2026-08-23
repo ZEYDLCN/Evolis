@@ -47,6 +47,16 @@ export async function apiFetch<T = unknown>(path: string, options: RequestInit =
   return res.json() as Promise<T>;
 }
 
+export async function fetchSvg(path: string): Promise<string> {
+  const token = getToken();
+  const headers: Record<string, string> = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const res = await fetch(`${API_URL}${path}`, { headers });
+  if (!res.ok) throw new ApiError(res.status, res.statusText);
+  return res.text();
+}
+
 export const api = {
   register: (email: string, password: string) =>
     apiFetch<{ access_token: string }>("/auth/register", { method: "POST", body: JSON.stringify({ email, password }) }),

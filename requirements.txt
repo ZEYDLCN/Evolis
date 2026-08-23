@@ -7,6 +7,7 @@ sqlalchemy>=2.0
 alembic>=1.13
 langgraph>=0.2        # orchestrates the Ask LifeDiff pipeline (src/agents/graph.py)
 prometheus-client>=0.20
+cryptography>=42      # optional at runtime (ENCRYPTION_KEY), required to import the module
 
 # Background jobs
 celery>=5.4
@@ -25,6 +26,7 @@ redis>=5.0
 # numpy>=1.26
 # pgvector>=0.3            # only needed when DATABASE_URL is Postgres
 # psycopg[binary]>=3.2     # Postgres driver
+# neo4j>=5                 # only needed if NEO4J_URI is set (src/graph/neo4j_sync.py)
 
 # Testing
 pytest>=8.0

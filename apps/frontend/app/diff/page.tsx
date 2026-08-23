@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import NavBar from "../../components/NavBar";
 import { useRequireAuth } from "../../lib/useAuth";
-import { api, Version, DiffResult, ApiError } from "../../lib/api";
+import { api, fetchSvg, Version, DiffResult, ApiError } from "../../lib/api";
 import { page, card, button, mutedText, errorText, pill } from "../../lib/styles";
 
 function pct(x: number | null): string {
@@ -19,6 +19,7 @@ export default function DiffPage() {
   const [target, setTarget] = useState("");
   const [diff, setDiff] = useState<DiffResult | null>(null);
   const [releaseNotes, setReleaseNotes] = useState<string | null>(null);
+  const [cardSvg, setCardSvg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -40,6 +41,7 @@ export default function DiffPage() {
     try {
       setDiff(await api.diff(base, target));
       setReleaseNotes(null);
+      setCardSvg(null);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to compute diff");
       setDiff(null);
@@ -51,6 +53,22 @@ export default function DiffPage() {
   async function loadReleaseNotes() {
     const result = await api.releaseNotes(base, target);
     setReleaseNotes(result.text);
+  }
+
+  async function loadShareCard() {
+    const svg = await fetchSvg(`/release-notes/card?base=${encodeURIComponent(base)}&target=${encodeURIComponent(target)}`);
+    setCardSvg(svg);
+  }
+
+  function downloadCard() {
+    if (!cardSvg) return;
+    const blob = new Blob([cardSvg], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `lifediff-v${base}-v${target}.svg`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   if (!ready) return null;
@@ -101,13 +119,27 @@ export default function DiffPage() {
               <h2 style={{ fontFamily: "monospace", fontSize: 18, margin: 0 }}>
                 YOU v{diff.base} → YOU v{diff.target}
               </h2>
-              <button onClick={loadReleaseNotes} style={{ ...button, background: "#eee", color: "#333" }}>
-                Release Notes
-              </button>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={loadReleaseNotes} style={{ ...button, background: "#eee", color: "#333" }}>
+                  Release Notes
+                </button>
+                <button onClick={loadShareCard} style={{ ...button, background: "#eee", color: "#333" }}>
+                  Share Card
+                </button>
+              </div>
             </div>
 
             {releaseNotes && (
               <pre style={{ ...card, whiteSpace: "pre-wrap", fontFamily: "monospace", fontSize: 14, marginTop: 12 }}>{releaseNotes}</pre>
+            )}
+
+            {cardSvg && (
+              <div style={{ ...card, marginTop: 12 }}>
+                <div dangerouslySetInnerHTML={{ __html: cardSvg }} />
+                <button onClick={downloadCard} style={{ ...button, marginTop: 12 }}>
+                  Download
+                </button>
+              </div>
             )}
 
             {diff.added_topics.length > 0 && (

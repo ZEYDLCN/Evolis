@@ -98,16 +98,22 @@ docker/         Dockerfiles for api/worker; see docker-compose.yml at the root
 
 ## Status
 
-MVP+: daily entry ingestion, structured extraction, interest/skill scoring,
-version snapshots, the diff engine, timeline, task-based completion
-tracking, semantic clustering with LLM-named topics, a skill progression
-graph, anomaly and pattern detection, shareable release notes, self-service
-data export/account deletion, a Next.js frontend wired to all of it, and a
-rule-based Ask LifeDiff pipeline (classify → plan → SQL/vector analysis →
-grounded answer). Schema is managed with Alembic (`alembic upgrade head`). See
-[docs/ARCHITECTURE.md § What's intentionally NOT built yet](docs/ARCHITECTURE.md#8-whats-intentionally-not-built-yet-phase-2--3-per-original-spec)
-for what's still open (LangGraph orchestration, monitoring stack, Knowledge
-Graph, etc).
+Feature-complete against the spec's MVP + Phase 2/3 architecture, short of
+the pieces that need a real external account or a production target no one
+has set up yet (mobile app, calendar/git OAuth integrations, an actual
+deployment). Everything else is implemented and tested: daily entry
+ingestion, structured extraction, interest/skill scoring, version
+snapshots, the diff engine, timeline, task-based completion tracking,
+semantic clustering with LLM-named topics (+ silhouette/stability quality
+metrics), a skill progression graph, anomaly and pattern detection,
+shareable release notes (text + downloadable SVG card), a computed
+Knowledge Graph export (optional Neo4j sync), opt-in encryption at rest,
+self-service data export/account deletion, Prometheus metrics, a Next.js
+frontend wired to all of it, and Ask LifeDiff running as a real LangGraph
+`StateGraph` (classify → plan → SQL/vector analysis → explain → verify →
+grounded answer). Schema is managed with Alembic (`alembic upgrade head`).
+See [docs/ARCHITECTURE.md § What's intentionally NOT built yet](docs/ARCHITECTURE.md#8-whats-intentionally-not-built-yet-phase-2--3-per-original-spec)
+for exactly what's left and why.
 
 ### Frontend
 
@@ -117,7 +123,9 @@ npm install
 npm run dev   # http://localhost:3000, expects the API at NEXT_PUBLIC_API_URL (default localhost:8000)
 ```
 
-Screens: Login/Register, Today (daily check-in), Timeline, Diff, Profile
-(version generation), Projects, Insights (interests/skills/skill graph/
-behavior), Ask LifeDiff. Auth token lives in `localStorage`; no state
-library — plain `fetch` calls through `apps/frontend/lib/api.ts`.
+Screens: Login/Register, Today (daily check-in), Timeline, Diff (+ Release
+Notes and a downloadable share card), Profile (version generation, data
+export/account deletion), Projects, Insights (interests/skills/skill graph/
+behavior/anomalies/patterns), Ask LifeDiff. Auth token lives in
+`localStorage`; no state library — plain `fetch` calls through
+`apps/frontend/lib/api.ts`.

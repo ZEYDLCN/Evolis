@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session
 
 from apps.api.dependencies import get_current_user
@@ -6,6 +6,7 @@ from src.database.base import get_db
 from src.database.models import Activity, Entry, User, Version
 from src.versions.diff import diff_versions
 from src.versions.release_notes import render_release_notes
+from src.versions.share_card import render_release_notes_svg
 from src.versions.snapshot import version_metrics_dict
 
 router = APIRouter(tags=["diff"])
@@ -17,6 +18,24 @@ def _get_versions(db: Session, user: User, base: str, target: str) -> tuple[Vers
     if not base_version or not target_version:
         raise HTTPException(404, "One or both versions not found")
     return base_version, target_version
+
+
+def _build_release_notes(db: Session, user: User, base_version: Version, target_version: Version) -> dict:
+    diff = diff_versions(version_metrics_dict(base_version), version_metrics_dict(target_version))
+
+    active_projects = (
+        db.query(Activity.project_id)
+        .join(Entry, Entry.id == Activity.entry_id)
+        .filter(
+            Entry.user_id == user.id,
+            Entry.entry_date >= target_version.period_start,
+            Entry.entry_date < target_version.period_end,
+            Activity.project_id.is_not(None),
+        )
+        .distinct()
+        .count()
+    )
+    return render_release_notes(base_version.label, target_version.label, diff, active_project_count=active_projects)
 
 
 @router.get("/diff")
@@ -39,18 +58,18 @@ def get_release_notes(
     db: Session = Depends(get_db),
 ) -> dict:
     base_version, target_version = _get_versions(db, user, base, target)
-    diff = diff_versions(version_metrics_dict(base_version), version_metrics_dict(target_version))
+    return _build_release_notes(db, user, base_version, target_version)
 
-    active_projects = (
-        db.query(Activity.project_id)
-        .join(Entry, Entry.id == Activity.entry_id)
-        .filter(
-            Entry.user_id == user.id,
-            Entry.entry_date >= target_version.period_start,
-            Entry.entry_date < target_version.period_end,
-            Activity.project_id.is_not(None),
-        )
-        .distinct()
-        .count()
-    )
-    return render_release_notes(base, target, diff, active_project_count=active_projects)
+
+@router.get("/release-notes/card")
+def get_release_notes_card(
+    base: str = Query(...),
+    target: str = Query(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Response:
+    """Shareable social card (sections 28, 41) as a self-contained SVG."""
+    base_version, target_version = _get_versions(db, user, base, target)
+    notes = _build_release_notes(db, user, base_version, target_version)
+    svg = render_release_notes_svg(notes)
+    return Response(content=svg, media_type="image/svg+xml")

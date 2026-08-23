@@ -136,8 +136,11 @@ POST /clusters/rebuild, GET /clusters
 POST /versions/generate, GET /versions
 GET  /diff?base=<label>&target=<label>
 GET  /release-notes?base=<label>&target=<label>
+GET  /release-notes/card?base=<label>&target=<label>   (image/svg+xml)
 POST /ask
 GET  /me/export, DELETE /me
+GET  /graph/export, POST /graph/sync
+GET  /metrics                                          (Prometheus, unauthenticated)
 ```
 
 All routes except `/auth/*` and `/health` require a bearer JWT and are
@@ -189,17 +192,60 @@ Done since the initial MVP:
   `alembic upgrade head` + `alembic check` (fails if models drift from the
   latest migration) then the full pytest suite; frontend job runs
   `next build` (typecheck + static generation) on every push/PR to `main`
+- ~~Full LangGraph agent orchestration~~ — `src/agents/graph.py`: Ask
+  LifeDiff runs as a real `StateGraph` (classify → plan → analyze → explain
+  → verify → END), compiled once and cached. `orchestrator.ask()` is still
+  the stable entry point the API calls. Fixing the graph's own tests
+  surfaced and fixed a real classifier bug: `\b...\b` word-boundary regexes
+  silently rejected every inflected Turkish form of a stem (ilgi → ilgim,
+  değiş → değiştim), permanently misrouting those questions to the
+  `search` fallback.
+- ~~Prometheus monitoring~~ (§36) — `src/monitoring/metrics.py`: HTTP
+  request count/latency (FastAPI middleware), LLM calls by purpose/outcome,
+  embedding generation time, background job time/errors. `GET /metrics`.
+  LangSmith/Grafana wiring is a deployment-time addition on top of this,
+  not more application code.
+- ~~Clustering quality metrics~~ (§37) — `src/ml/clustering/quality.py`:
+  silhouette score and rebuild-to-rebuild stability (Adjusted Rand Index),
+  both optional (`None` without scikit-learn or with too few clusters).
+  Returned from `POST /clusters/rebuild`.
+- ~~Encryption at rest~~ (§32) — `src/database/encryption.py`: an opt-in
+  (`ENCRYPTION_KEY`) SQLAlchemy `TypeDecorator` that transparently
+  encrypts/decrypts `Entry.raw_text` (AES via `cryptography.fernet`) at the
+  ORM boundary. Off by default so every existing test and deployment is
+  unaffected. Trade-off made explicit in the module docstring: an encrypted
+  column can't be searched with SQL `LIKE`, so
+  `src/rag/retriever.py::keyword_search` branches to decrypt-then-filter in
+  Python when encryption is on — fine at personal-analytics scale, not
+  forever.
+- ~~Social Share Cards~~ (§28, §41) — `src/versions/share_card.py` renders
+  the existing `VersionDiff`/release-notes data as a self-contained SVG
+  card (no image library, no server-side font rendering to get right).
+  `GET /release-notes/card`, rendered + downloadable on the frontend's Diff
+  page.
+- ~~Knowledge Graph~~ (§25, explicitly optional per spec) —
+  `src/graph/knowledge_graph.py` builds the USER→LEARNS→SKILL,
+  USER→BUILDS→PROJECT, PROJECT→USES→SKILL, ENTRY→MENTIONS→TOPIC graph as
+  plain JSON from already-computed data (no new source of truth);
+  `GET /graph/export` always works. `src/graph/neo4j_sync.py` optionally
+  pushes it into a real Neo4j instance when `NEO4J_URI` is set and the
+  `neo4j` driver is installed — `POST /graph/sync` reports honestly when it
+  skipped rather than pretending to have synced.
 
-Still open, roughly in the order it's worth picking them up:
-- Full LangGraph agent orchestration (current orchestrator is a plain
-  function pipeline with the same stage boundaries — see § 6)
-- Prometheus/Grafana/LangSmith wiring (`src/monitoring/` has the seam but is
-  currently empty)
-- Clustering quality metrics (silhouette score, cluster stability) — the
-  eval harness above covers extraction and retrieval, not clustering yet
-- Encryption at rest, production deployment
-- Knowledge Graph (Neo4j)
-- Mobile app, calendar import, git integration, social share cards
+Still open:
+- Mobile app, calendar import, git integration — each needs a real
+  external account/OAuth app registration (App Store presence, a Google/
+  Microsoft Calendar OAuth client, a GitHub OAuth app) that only the
+  product's actual owner can set up; not something to fake credentials for
+  in this environment. The architecture doesn't block them: calendar/git
+  import would land as new `src/ingestion/` sources feeding the same
+  `create_entry`/`Activity` pipeline everything else already goes through.
+- Production deployment (a real target environment — cloud provider,
+  domain, TLS — is a decision for whoever owns hosting, not something to
+  invent here)
+- LangSmith tracing wired to real LLM calls (needs a LangSmith account/key;
+  the call sites are already instrumented for metrics in `src/monitoring/`,
+  adding tracing there is small once there's somewhere to send it)
 
 ## 9. Running it
 
