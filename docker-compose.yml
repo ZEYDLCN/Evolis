@@ -30,18 +30,20 @@ services:
       context: .
       dockerfile: docker/Dockerfile.api
     # Overrides the image's CMD (alembic upgrade head && uvicorn, no
-    # --reload) with the dev entrypoint (same migration step, plus
-    # --reload and Codespaces auto-detection for CORS_ALLOWED_ORIGINS).
+    # --reload) with the dev entrypoint (same migration step, plus --reload
+    # for live code editing).
     command: ["sh", "docker/dev-entrypoint-api.sh"]
     env_file: .env
     environment:
       DATABASE_URL: postgresql+psycopg://evolis:evolis@postgres:5432/evolis
       REDIS_URL: redis://redis:6379/0
-      # Bare pass-through: Codespaces exports these on the host, and Compose
-      # forwards them into the container when no value is given here. A
-      # plain (non-Codespaces) `docker compose up` just leaves them unset.
-      CODESPACE_NAME:
-      GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN:
+      # Wildcard is fine here: this is local/Codespaces dev only (never
+      # docker-compose.prod.yml, which requires a real allowlist — see
+      # apps/api/main.py's _check_production_config). Anything more precise
+      # would mean correctly predicting the Codespaces forwarded-URL
+      # subdomain pattern, which isn't guaranteed to be visible to this
+      # container the same way it is to the frontend one.
+      CORS_ALLOWED_ORIGINS: "*"
     volumes:
       - .:/app
     # Dev convenience: the bind mount above is owned by whatever UID

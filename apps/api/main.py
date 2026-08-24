@@ -63,13 +63,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=CORS_ALLOWED_ORIGINS,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 # Cheap brute-force guard on auth endpoints. In-memory, so it resets on
 # restart and doesn't share state across multiple API replicas — fine for a
 # single-instance deployment; swap for a Redis-backed limiter (REDIS_URL is
@@ -81,6 +74,18 @@ if AUTH_RATE_LIMIT_MAX_REQUESTS > 0:
         max_requests=AUTH_RATE_LIMIT_MAX_REQUESTS,
         window_seconds=AUTH_RATE_LIMIT_WINDOW_SECONDS,
     )
+
+# Added last so it's the OUTERMOST middleware (Starlette runs middleware in
+# reverse of add order): a 429 from the rate limiter above, or any other
+# short-circuited response, still needs to pass back through CORSMiddleware
+# to get its Access-Control-Allow-Origin header — otherwise the browser
+# reports a confusing "CORS error" instead of surfacing the real 429/4xx.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ALLOWED_ORIGINS,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.middleware("http")
