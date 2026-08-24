@@ -2,6 +2,13 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
+# git: not needed by the app itself, but this is also the container GitHub
+# Codespaces attaches its integrated terminal to (.devcontainer/devcontainer.json
+# -> service: evolis-api), so `git pull`/`git commit` from that terminal need
+# it present in the image.
+RUN apt-get update && apt-get install -y --no-install-recommends git \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN groupadd -r evolis && useradd -r -g evolis evolis
 
 COPY requirements.txt .
