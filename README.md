@@ -62,8 +62,28 @@ optional ML dependencies.
 ### Full stack (Postgres + pgvector, Redis, worker, frontend)
 
 ```bash
+cp .env.example .env    # skip if you already have one
 docker compose up --build
 ```
+
+Frontend at `http://localhost:3000`, API docs at `http://localhost:8000/docs`.
+The API and frontend both live-reload on save (bind-mounted source).
+
+### GitHub Codespaces
+
+Open this repo in a Codespace and the whole stack (Postgres, Redis, API,
+worker, frontend) comes up automatically via `.devcontainer/devcontainer.json`
+— no manual `.env` setup needed, it's generated for you with a random dev
+secret. Once the "Ready." message appears in the terminal:
+
+- The **Ports** tab lists `3000` (frontend) and `8000` (API); click the
+  frontend's forwarded URL (or let it auto-open) to use the app.
+- The frontend and API auto-detect the Codespaces environment and point at
+  each other's forwarded HTTPS URLs instead of `localhost` — nothing to
+  configure by hand.
+- Both apps live-reload the same way as local Docker: edit and save, no
+  rebuild needed. See `DEPLOYMENT.md` for the real-deployment path
+  (`docker-compose.prod.yml`) once you're past local/Codespaces testing.
 
 ### Try it
 

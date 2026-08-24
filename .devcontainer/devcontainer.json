@@ -1,0 +1,33 @@
+{
+  "name": "Evolis",
+  "dockerComposeFile": ["../docker-compose.yml"],
+  "service": "evolis-api",
+  "workspaceFolder": "/app",
+  "shutdownAction": "stopCompose",
+
+  "initializeCommand": "bash .devcontainer/initialize.sh",
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+
+  "forwardPorts": [3000, 8000, 5432, 6379],
+  "portsAttributes": {
+    "3000": { "label": "Evolis Frontend", "onAutoForward": "openPreview" },
+    "8000": { "label": "Evolis API", "onAutoForward": "notify" },
+    "5432": { "label": "Postgres", "onAutoForward": "ignore" },
+    "6379": { "label": "Redis", "onAutoForward": "ignore" }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python3"
+      }
+    }
+  },
+
+  "remoteUser": "root"
+}

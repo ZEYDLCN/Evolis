@@ -1,6 +1,8 @@
-# Local development stack: live-reload frontend, ports exposed to the host
-# for direct DB/Redis access, no restart policy. For a real deployment use
-# docker-compose.prod.yml instead (see DEPLOYMENT.md).
+# Local development stack: live-reload API + frontend (bind-mounted source,
+# --reload / next dev), ports exposed to the host for direct DB/Redis
+# access, no restart policy. Also what .devcontainer/devcontainer.json uses
+# for GitHub Codespaces. For a real deployment use docker-compose.prod.yml
+# instead (see DEPLOYMENT.md).
 services:
   postgres:
     image: pgvector/pgvector:pg16
@@ -12,6 +14,11 @@ services:
       - "5432:5432"
     volumes:
       - evolis_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U evolis"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   redis:
     image: redis:7-alpine
@@ -22,15 +29,34 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.api
+    # Overrides the image's CMD (alembic upgrade head && uvicorn, no
+    # --reload) with the dev entrypoint (same migration step, plus
+    # --reload and Codespaces auto-detection for CORS_ALLOWED_ORIGINS).
+    command: ["sh", "docker/dev-entrypoint-api.sh"]
     env_file: .env
     environment:
       DATABASE_URL: postgresql+psycopg://evolis:evolis@postgres:5432/evolis
       REDIS_URL: redis://redis:6379/0
+      # Bare pass-through: Codespaces exports these on the host, and Compose
+      # forwards them into the container when no value is given here. A
+      # plain (non-Codespaces) `docker compose up` just leaves them unset.
+      CODESPACE_NAME:
+      GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN:
+    volumes:
+      - .:/app
+    # Dev convenience: the bind mount above is owned by whatever UID
+    # created the checkout (root in most container/CI contexts, the host
+    # user's UID in a plain `docker compose up`), which the image's
+    # non-root "evolis" user (see docker/Dockerfile.api) may not be able to
+    # write to — irrelevant for prod, where nothing is bind-mounted.
+    user: root
     ports:
       - "8000:8000"
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
   evolis-worker:
     build:
@@ -40,9 +66,14 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://evolis:evolis@postgres:5432/evolis
       REDIS_URL: redis://redis:6379/0
+    volumes:
+      - .:/app
+    user: root
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
   evolis-frontend:
     build:
@@ -52,6 +83,17 @@ services:
       - "3000:3000"
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000
+      CODESPACE_NAME:
+      GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN:
+    volumes:
+      - ./apps/frontend:/app
+      # Anonymous volumes: keep the image's own node_modules/.next instead
+      # of letting the bind mount above shadow them with the (empty, on a
+      # fresh checkout) host directories.
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - evolis-api
 
 volumes:
   evolis_pgdata:

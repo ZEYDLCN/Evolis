@@ -14,6 +14,12 @@ google-auth>=2.30     # optional at runtime (GOOGLE_CLIENT_ID), verifies Sign in
 celery>=5.4
 redis>=5.0
 
+# Postgres driver. A binary wheel, not "heavy" like the ML deps below, and
+# both docker-compose.yml and docker-compose.prod.yml point DATABASE_URL at
+# Postgres, so this needs to be a base dependency rather than optional —
+# SQLite-only local dev (no Docker) still works fine with it installed.
+psycopg[binary]>=3.2
+
 # --- Optional, heavier dependencies ---
 # Install these for production-grade embeddings/clustering/LLM extraction.
 # The app degrades gracefully (deterministic fallbacks) without them, which
@@ -25,8 +31,7 @@ redis>=5.0
 # hdbscan>=0.8
 # scikit-learn>=1.5
 # numpy>=1.26
-# pgvector>=0.3            # only needed when DATABASE_URL is Postgres
-# psycopg[binary]>=3.2     # Postgres driver
+# pgvector>=0.3            # only needed when EMBEDDING_BACKEND=pgvector
 # neo4j>=5                 # only needed if NEO4J_URI is set (src/graph/neo4j_sync.py)
 
 # Testing
