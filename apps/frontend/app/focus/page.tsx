@@ -8,6 +8,7 @@ import { Card } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { EmptyState } from "../../components/ui/EmptyState";
+import { useLang } from "../../components/LangProvider";
 
 const DURATIONS = [25, 50, 90];
 
@@ -26,6 +27,7 @@ function formatClock(seconds: number): string {
  * FocusSession row. */
 export default function FocusPage() {
   const ready = useRequireAuth();
+  const { t } = useLang();
   const [durationMinutes, setDurationMinutes] = useState(25);
   const [remaining, setRemaining] = useState(25 * 60);
   const [running, setRunning] = useState(false);
@@ -97,7 +99,7 @@ export default function FocusPage() {
 
   return (
     <AppShell>
-      <PageHeader title="Focus" description="Run a timed session — completed minutes count toward your deep work." />
+      <PageHeader title={t("focus.title")} description={t("focus.description")} />
 
       <Card className="mb-6 flex flex-col items-center py-10">
         <div className="mb-6 flex gap-2">
@@ -125,15 +127,15 @@ export default function FocusPage() {
 
         <div className="flex gap-3">
           {!running ? (
-            <Button onClick={start}>{remaining === durationMinutes * 60 ? "Start" : "Resume"}</Button>
+            <Button onClick={start}>{remaining === durationMinutes * 60 ? t("focus.start") : "Resume"}</Button>
           ) : (
             <Button variant="secondary" onClick={pause}>
-              Pause
+              {t("focus.pause")}
             </Button>
           )}
           {(running || remaining !== durationMinutes * 60) && (
             <Button variant="ghost" onClick={finish}>
-              End &amp; log
+              {t("focus.endAndLog")}
             </Button>
           )}
         </div>
@@ -141,18 +143,18 @@ export default function FocusPage() {
 
       <div className="mb-6 grid grid-cols-2 gap-3">
         <Card>
-          <div className="text-xs uppercase tracking-wide text-muted">Today</div>
+          <div className="text-xs uppercase tracking-wide text-muted">{t("focus.today")}</div>
           <div className="mt-1 text-2xl font-semibold text-ink">{todayMinutes}min</div>
         </Card>
         <Card>
-          <div className="text-xs uppercase tracking-wide text-muted">Sessions logged</div>
+          <div className="text-xs uppercase tracking-wide text-muted">{t("focus.sessionsLogged")}</div>
           <div className="mt-1 text-2xl font-semibold text-ink">{sessions.length}</div>
         </Card>
       </div>
 
-      <div className="mb-3 text-sm font-semibold text-ink">Recent sessions</div>
+      <div className="mb-3 text-sm font-semibold text-ink">{t("focus.recentSessions")}</div>
       {loading ? (
-        <p className="text-sm text-muted">Loading...</p>
+        <p className="text-sm text-muted">{t("common.loading")}</p>
       ) : sessions.length === 0 ? (
         <EmptyState icon="⏱️" title="No sessions yet" description="Run your first timer above." />
       ) : (

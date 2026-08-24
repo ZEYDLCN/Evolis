@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from apps.api.dependencies import get_current_user
 from src.analytics.anomalies import detect_learning_time_anomalies
+from src.analytics.domains import domain_breakdown
 from src.analytics.evolis_score import compute_evolis_score
 from src.analytics.interests import topic_interest_scores
 from src.analytics.onboarding import compute_onboarding_status
@@ -31,6 +32,12 @@ def _default_range(months: int) -> tuple[dt.datetime, dt.datetime]:
 def get_interests(months: int = Query(3, ge=1, le=36), user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict:
     start, end = _default_range(months)
     return topic_interest_scores(db, user.id, start, end)
+
+
+@router.get("/domains")
+def get_domains(months: int = Query(3, ge=1, le=36), user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict:
+    start, end = _default_range(months)
+    return domain_breakdown(db, user.id, start, end)
 
 
 @router.get("/skills")

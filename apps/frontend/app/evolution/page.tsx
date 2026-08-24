@@ -13,6 +13,7 @@ import { Badge, DeltaBadge } from "../../components/ui/Badge";
 import { Tabs } from "../../components/ui/Tabs";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { PageHeader } from "../../components/ui/PageHeader";
+import { useLang } from "../../components/LangProvider";
 
 function isoMonthsAgo(months: number): string {
   const d = new Date();
@@ -31,6 +32,7 @@ export default function EvolutionPage() {
 
 function EvolutionPageInner() {
   const ready = useRequireAuth();
+  const { t } = useLang();
   const searchParams = useSearchParams();
   const VALID_TABS = ["current", "history", "compare", "release_notes"];
   const tabParam = searchParams.get("tab");
@@ -48,16 +50,16 @@ function EvolutionPageInner() {
 
   return (
     <AppShell>
-      <PageHeader title="Evolution" description="Your version history, compared side by side." />
+      <PageHeader title={t("evolution.title")} description={t("evolution.description")} />
 
       <Tabs
         active={tab}
         onChange={setTab}
         tabs={[
-          { key: "current", label: "Current Version" },
-          { key: "history", label: "Version History" },
-          { key: "compare", label: "Compare Versions" },
-          { key: "release_notes", label: "Release Notes" },
+          { key: "current", label: t("evolution.tab.current") },
+          { key: "history", label: t("evolution.tab.history") },
+          { key: "compare", label: t("evolution.tab.compare") },
+          { key: "release_notes", label: t("evolution.tab.releaseNotes") },
         ]}
       />
 
@@ -313,8 +315,8 @@ function CompareTab({ versions }: { versions: Version[] }) {
             YOU v{diff.base} → YOU v{diff.target}
           </div>
 
-          <DiffSection title="Added" tone="positive" items={diff.added_topics.map((t) => `+ ${t}`)} />
-          <DiffSection title="Emerging Interest" tone="info" items={diff.emerging_topics.map((t) => `→ ${t}`)} />
+          <DiffSection title="Added" tone="positive" prefix="+" topics={diff.added_topics} domainOf={diff.topic_domains} />
+          <DiffSection title="Emerging Interest" tone="info" prefix="→" topics={diff.emerging_topics} domainOf={diff.topic_domains} />
 
           <Card>
             <div className="mb-3 text-sm font-semibold text-ink">Behavior</div>
@@ -343,8 +345,8 @@ function CompareTab({ versions }: { versions: Version[] }) {
             </div>
           </Card>
 
-          <DiffSection title="Declining" tone="negative" items={diff.declining_topics.map((t) => `↓ ${t}`)} />
-          <DiffSection title="Dormant" tone="neutral" items={diff.dormant_topics.map((t) => `- ${t}`)} />
+          <DiffSection title="Declining" tone="negative" prefix="↓" topics={diff.declining_topics} domainOf={diff.topic_domains} />
+          <DiffSection title="Dormant" tone="neutral" prefix="-" topics={diff.dormant_topics} domainOf={diff.topic_domains} />
 
           {Object.keys(diff.skill_changes).length > 0 && (
             <Card>
@@ -400,16 +402,44 @@ function BehaviorMetric({
   );
 }
 
-function DiffSection({ title, tone, items }: { title: string; tone: "positive" | "negative" | "neutral" | "info"; items: string[] }) {
-  if (items.length === 0) return null;
+/** Groups a diff section's topics by life domain (Skills, Work & Projects,
+ * Learning, Habits & Routines, Personal Growth, Behavior) instead of one
+ * flat badge list — Evolis tracks more than just tech skills, so a
+ * version diff should read that way too. */
+function DiffSection({
+  title,
+  tone,
+  prefix,
+  topics,
+  domainOf,
+}: {
+  title: string;
+  tone: "positive" | "negative" | "neutral" | "info";
+  prefix: string;
+  topics: string[];
+  domainOf: Record<string, string>;
+}) {
+  if (topics.length === 0) return null;
+
+  const byDomain: Record<string, string[]> = {};
+  for (const topic of topics) {
+    const domain = domainOf[topic] ?? "Skills";
+    (byDomain[domain] ??= []).push(topic);
+  }
+
   return (
     <div>
       <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">{title}</div>
-      <div className="flex flex-wrap gap-2">
-        {items.map((item) => (
-          <Badge key={item} tone={tone}>
-            {item}
-          </Badge>
+      <div className="space-y-2">
+        {Object.entries(byDomain).map(([domain, domainTopics]) => (
+          <div key={domain} className="flex flex-wrap items-center gap-2">
+            <span className="text-[11px] font-medium text-muted">{domain}</span>
+            {domainTopics.map((topic) => (
+              <Badge key={topic} tone={tone}>
+                {prefix} {topic}
+              </Badge>
+            ))}
+          </div>
         ))}
       </div>
     </div>

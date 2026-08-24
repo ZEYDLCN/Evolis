@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from src.extraction.domains import DOMAIN_LABELS, classify_domain
+
 NEW_TOPIC_THRESHOLD = 0.15  # below this in the base version, above it in the target -> "added"
 DECLINE_THRESHOLD = -0.20  # relative change below this -> "declining"
 IMPROVE_THRESHOLD = 0.10
@@ -34,6 +36,12 @@ class VersionDiff:
     deep_work_after: float | None = None
     context_switching_before: float | None = None
     context_switching_after: float | None = None
+    # Broader life tracking (not just tech): every topic name mentioned
+    # anywhere in this diff, labeled with its life domain — Skills, Work &
+    # Projects, Learning, Habits & Routines, Personal Growth, or Behavior
+    # — so a UI can group "New/Improved/Declining" the way a real Evolis
+    # version diff should read, not as one flat topic list.
+    topic_domains: dict[str, str] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return {
@@ -52,6 +60,7 @@ class VersionDiff:
             "deep_work_after": self.deep_work_after,
             "context_switching_before": self.context_switching_before,
             "context_switching_after": self.context_switching_after,
+            "topic_domains": self.topic_domains,
         }
 
 
@@ -72,6 +81,7 @@ def diff_versions(base_metrics: dict, target_metrics: dict) -> VersionDiff:
         before = base_topics.get(topic, 0.0)
         after = target_topics.get(topic, 0.0)
         diff.topic_score_changes[topic] = round(after - before, 4)
+        diff.topic_domains[topic] = DOMAIN_LABELS[classify_domain(topic)]
 
         if topic not in base_topics and after >= NEW_TOPIC_THRESHOLD:
             diff.added_topics.append(topic)

@@ -10,9 +10,11 @@ import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { EmptyState } from "../../components/ui/EmptyState";
+import { useLang } from "../../components/LangProvider";
 
 export default function ProjectsPage() {
   const ready = useRequireAuth();
+  const { t } = useLang();
   const [projects, setProjects] = useState<Project[]>([]);
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(true);
@@ -48,13 +50,13 @@ export default function ProjectsPage() {
 
   return (
     <AppShell>
-      <PageHeader title="Projects" description="Projects are auto-linked when an entry mentions them, or add one directly." />
+      <PageHeader title={t("projects.title")} description={t("projects.description")} />
 
       <Card className="mb-6">
         <form onSubmit={submit} className="flex gap-3">
           <Input placeholder="Project name" value={name} onChange={(e) => setName(e.target.value)} />
           <Button type="submit" disabled={submitting || !name.trim()}>
-            Add
+            {t("common.add")}
           </Button>
         </form>
       </Card>

@@ -7,22 +7,24 @@ import { cn } from "../lib/cn";
 import EvolisLogo from "./EvolisLogo";
 import ThemeToggle from "./ThemeToggle";
 import NotificationBell from "./NotificationBell";
+import { useLang } from "./LangProvider";
 
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Overview" },
-  { href: "/today", label: "Today" },
-  { href: "/timeline", label: "Timeline" },
-  { href: "/evolution", label: "Evolution" },
-  { href: "/projects", label: "Projects" },
-  { href: "/goals", label: "Goals" },
-  { href: "/focus", label: "Focus" },
-  { href: "/insights", label: "Insights" },
-  { href: "/ask", label: "Ask Evolis" },
+  { href: "/dashboard", key: "nav.overview" },
+  { href: "/today", key: "nav.today" },
+  { href: "/timeline", key: "nav.timeline" },
+  { href: "/evolution", key: "nav.evolution" },
+  { href: "/projects", key: "nav.projects" },
+  { href: "/goals", key: "nav.goals" },
+  { href: "/focus", key: "nav.focus" },
+  { href: "/insights", key: "nav.insights" },
+  { href: "/ask", key: "nav.ask" },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { t } = useLang();
 
   return (
     <aside className="fixed inset-y-0 left-0 hidden w-60 flex-col border-r border-line bg-card px-4 py-6 md:flex">
@@ -35,7 +37,7 @@ export default function Sidebar() {
           onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
           className="flex flex-1 items-center justify-between rounded-xl border border-line bg-surface px-3 py-2 text-sm text-muted transition-colors hover:border-brand-emerald hover:text-brand-emerald"
         >
-          <span>Search</span>
+          <span>{t("nav.search")}</span>
           <kbd className="rounded border border-line bg-card px-1.5 py-0.5 text-[10px] font-medium">⌘K</kbd>
         </button>
         <NotificationBell />
@@ -53,7 +55,7 @@ export default function Sidebar() {
                 active ? "bg-brand-emerald/10 text-brand-emerald" : "text-muted hover:bg-surface hover:text-ink"
               )}
             >
-              {item.label}
+              {t(item.key)}
             </Link>
           );
         })}
@@ -68,7 +70,7 @@ export default function Sidebar() {
             pathname === "/profile" ? "bg-brand-emerald/10 text-brand-emerald" : "text-muted hover:bg-surface hover:text-ink"
           )}
         >
-          Profile
+          {t("nav.profile")}
         </Link>
         <button
           onClick={() => {
@@ -77,7 +79,7 @@ export default function Sidebar() {
           }}
           className="rounded-xl px-3 py-2 text-left text-sm font-medium text-muted transition-colors hover:bg-surface hover:text-ink"
         >
-          Log out
+          {t("nav.logout")}
         </button>
       </div>
     </aside>

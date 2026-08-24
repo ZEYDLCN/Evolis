@@ -38,7 +38,13 @@ Return ONLY a JSON object matching this shape, no prose:
   "completion_status": "done|partial|blocked|none"
 }
 The entry may be in Turkish or English. Topic/project names should be kept
-as short canonical nouns (e.g. "LangGraph", "Docker"), not full sentences."""
+as short canonical nouns (e.g. "LangGraph", "Docker", "English", "Reading",
+"Walking", "Presentation"), not full sentences. This log covers a person's
+whole life, not just technical work — capture skills, habits/routines
+(exercise, sleep, walking), personal growth (reading, hobbies, creative
+work), and work/career topics (meetings, presentations, projects) exactly
+as readily as programming/AI topics. Don't skip a topic just because it
+isn't technical."""
 
 
 class Extractor(Protocol):
@@ -71,6 +77,23 @@ class AnthropicExtractor:
 
 
 _DURATION_RE = re.compile(r"(\d+(?:[.,]\d+)?)\s*(saat|hour|hr|dakika|dk|min)", re.IGNORECASE)
+
+# Broader life tracking (not just tech): common lowercase nouns for a
+# life-domain activity that the plain "capitalized token" heuristic below
+# would otherwise miss entirely — most of a habits/personal-growth entry
+# never gets capitalized ("yürüdüm", "kitap okudum").
+_LIFE_TOPIC_PATTERNS: list[tuple[re.Pattern, str]] = [
+    (re.compile(r"\bingilizce\b|\benglish\b", re.IGNORECASE), "English"),
+    (re.compile(r"\byürü|\bwalk(?:ing)?\b", re.IGNORECASE), "Walking"),
+    (re.compile(r"\bkoş|\brun(?:ning)?\b", re.IGNORECASE), "Running"),
+    (re.compile(r"\begzersiz|\bexercise\b|\bworkout\b|\bspor\b|\bgym\b", re.IGNORECASE), "Exercise"),
+    (re.compile(r"\bkitap\b|\bbook\b|\boku(?:dum|yorum|ma)?\b|\bread(?:ing)?\b", re.IGNORECASE), "Reading"),
+    (re.compile(r"\buyku\b|\bsleep\b", re.IGNORECASE), "Sleep"),
+    (re.compile(r"\bsunum\b|\bpresentation\b", re.IGNORECASE), "Presentation"),
+    (re.compile(r"\btoplant[ıi]\b|\bmeeting\b", re.IGNORECASE), "Meeting"),
+    (re.compile(r"\bmeditasyon\b|\bmeditat(?:e|ion|ing)\b", re.IGNORECASE), "Meditation"),
+    (re.compile(r"\bjournal(?:ing)?\b|\bgünlük\b", re.IGNORECASE), "Journaling"),
+]
 _BLOCKER_MARKERS = ("uğraştım", "geçemedim", "blocked", "sorun", "engel", "yapamadım")
 _DONE_MARKERS = ("bitirdim", "tamamladım", "done", "completed", "finished")
 _PARTIAL_MARKERS = ("kısmen", "biraz", "partial", "devam ediyor", "geçemedim")
@@ -115,12 +138,22 @@ class HeuristicExtractor:
 
     @staticmethod
     def _guess_topics(text: str) -> list[str]:
+        seen: list[str] = []
+
+        # Life-domain nouns first (usually lowercase, e.g. "yürüdüm",
+        # "kitap okudum") — these are the ones a pure capitalization
+        # heuristic would silently drop, and Evolis is meant to track more
+        # than tech work.
+        for pattern, canonical in _LIFE_TOPIC_PATTERNS:
+            if pattern.search(text) and canonical not in seen:
+                seen.append(canonical)
+
         # Known-tech capitalized tokens, plus generic CamelCase / ALLCAPS words.
         candidates = re.findall(r"\b([A-Z][a-zA-Z0-9]{2,}(?:\s[A-Z][a-zA-Z0-9]{2,})?)\b", text)
-        seen: list[str] = []
         for c in candidates:
             if c not in seen and c.lower() not in {"bugün", "ben", "the", "today"}:
                 seen.append(c)
+
         return seen[:8]
 
     @staticmethod

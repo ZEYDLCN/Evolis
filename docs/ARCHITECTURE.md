@@ -19,6 +19,30 @@ Daily natural-language entry
         -> Dashboard / Release Notes / Ask Evolis
 ```
 
+## 1.5 Life domains — broader than tech
+
+Evolis isn't a developer-only tool: any topic it ever extracts — a project
+name, "English", "Reading", a behavior signal like "Low Focus" — gets
+classified into one of five life domains, plus a Behavior bucket for
+signals that describe a state rather than an activity:
+
+- **Skills** — presentation, communication, design, or an unrecognized
+  proper noun (the default: most tool/tech names land here)
+- **Work & Projects** — project work, meetings, career activity
+- **Learning** — languages, courses, structured study
+- **Habits & Routines** — exercise, sleep, walking, routines
+- **Personal Growth** — reading, hobbies, creative and reflective work
+- **Behavior** — a signal detected from phrasing, not an activity (e.g.
+  "Low Focus", "Low Energy", "High Confidence") — descriptive, never
+  framed as a diagnosis
+
+Classification (`src/extraction/domains.py`) is a small deterministic
+keyword lookup, not an LLM call — same topic name always lands in the
+same domain, for free. This keeps Evolis from drifting into a classic
+wellness app (no manual step-count/water-intake logging): the user just
+describes their day in natural language, and domain-tagging happens
+entirely downstream of that.
+
 ## 2. The one rule everything else follows
 
 ```

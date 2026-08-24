@@ -9,6 +9,7 @@ import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Badge } from "../../components/ui/Badge";
 import { PageHeader } from "../../components/ui/PageHeader";
+import { useLang } from "../../components/LangProvider";
 import { cn } from "../../lib/cn";
 
 const SUGGESTIONS = [
@@ -92,6 +93,7 @@ function EvidencePanel({ evidence }: { evidence: AskEvidence }) {
 
 export default function AskPage() {
   const ready = useRequireAuth();
+  const { t } = useLang();
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -120,7 +122,7 @@ export default function AskPage() {
 
   return (
     <AppShell>
-      <PageHeader title="Ask Evolis" description="Ask a question about your own history — every number in the answer is computed, not guessed." />
+      <PageHeader title={t("ask.title")} description={t("ask.description")} />
 
       {messages.length === 0 && (
         <div className="mb-6 flex flex-wrap gap-2">
@@ -177,12 +179,12 @@ export default function AskPage() {
       >
         <Input
           className="border-none focus:ring-0"
-          placeholder="How have I changed in the last 3 months?"
+          placeholder={t("ask.placeholder")}
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
         />
         <Button type="submit" disabled={loading || !question.trim()}>
-          Ask
+          {t("ask.send")}
         </Button>
       </form>
     </AppShell>

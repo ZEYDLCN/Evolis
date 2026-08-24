@@ -9,9 +9,11 @@ import GoogleSignInButton from "../../components/GoogleSignInButton";
 import { Card } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { Input, Label } from "../../components/ui/Input";
+import { useLang } from "../../components/LangProvider";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { t } = useLang();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -50,7 +52,7 @@ export default function LoginPage() {
               mode === "login" ? "bg-brand-emerald text-white" : "bg-surface text-ink"
             )}
           >
-            Log in
+            {t("login.login")}
           </button>
           <button
             type="button"
@@ -60,19 +62,19 @@ export default function LoginPage() {
               mode === "register" ? "bg-brand-emerald text-white" : "bg-surface text-ink"
             )}
           >
-            Register
+            {t("login.register")}
           </button>
         </div>
 
         <form onSubmit={submit}>
-          <Label>Email</Label>
+          <Label>{t("login.email")}</Label>
           <Input className="mb-3" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
 
-          <Label>Password</Label>
+          <Label>{t("login.password")}</Label>
           <Input className="mb-4" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
 
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "..." : mode === "login" ? "Log in" : "Create account"}
+            {loading ? "..." : mode === "login" ? t("login.login") : t("login.createAccount")}
           </Button>
 
           {error && <p className="mt-2 text-sm text-red-600">{error}</p>}

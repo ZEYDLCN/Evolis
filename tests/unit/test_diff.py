@@ -31,3 +31,4 @@ def test_diff_detects_added_declining_and_dormant_topics():
     assert diff.deep_work_after == 3.4
     assert diff.completion_before == 0.62
     assert diff.completion_after == 0.78
+    assert diff.topic_domains["LangGraph"] == "Skills"

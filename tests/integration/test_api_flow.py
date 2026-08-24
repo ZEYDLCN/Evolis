@@ -209,6 +209,35 @@ def test_ask_response_includes_tool_trace(client):
     assert len(body["tool_trace"]) >= 3
 
 
+def test_domains_endpoint_groups_broader_life_topics(client):
+    headers = _auth_headers(client)
+    client.post(
+        "/entries",
+        json={"text": "Bugün 45 dakika İngilizce çalıştım, 30 dakika yürüdüm, akşam kitap okudum."},
+        headers=headers,
+    )
+
+    r = client.get("/analytics/domains", headers=headers)
+    assert r.status_code == 200
+    body = r.json()
+    assert "English" in body.get("Learning", {})
+    assert "Walking" in body.get("Habits & Routines", {})
+    assert "Reading" in body.get("Personal Growth", {})
+
+
+def test_behavior_signal_flows_through_entry_pipeline(client):
+    headers = _auth_headers(client)
+    r = client.post(
+        "/entries",
+        json={"text": "Bugün akşam kitap okudum ama odaklanmakta zorlandım."},
+        headers=headers,
+    )
+    assert r.status_code == 201, r.text
+
+    r = client.get("/analytics/domains", headers=headers)
+    assert "Low Focus" in r.json().get("Behavior", {})
+
+
 def test_me_endpoint(client):
     email = f"{uuid.uuid4()}@example.com"
     r = client.post("/auth/register", json={"email": email, "password": "hunter2"})

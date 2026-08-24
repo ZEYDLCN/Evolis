@@ -25,3 +25,13 @@ def test_empty_text_has_no_crash():
     result = extractor.extract("")
     assert result.topics == []
     assert result.completion_status == "none"
+
+
+def test_extracts_broader_life_domain_topics():
+    extractor = HeuristicExtractor()
+    result = extractor.extract(
+        "Bugün 45 dakika İngilizce çalıştım, 30 dakika yürüdüm, akşam kitap okudum."
+    )
+    assert "English" in result.topics
+    assert "Walking" in result.topics
+    assert "Reading" in result.topics

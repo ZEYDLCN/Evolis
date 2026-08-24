@@ -7,6 +7,7 @@ import { getToken } from "../lib/api";
 import EvolisLogo from "../components/EvolisLogo";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
+import { useLang } from "../components/LangProvider";
 
 const FEATURES = [
   { icon: "📝", title: "Daily entries, structured automatically", detail: "Write in plain language — Evolis extracts topics, activities, and status for you." },
@@ -20,6 +21,7 @@ const FEATURES = [
  * gets a real marketing page instead of a redirect flash to /login. */
 export default function Home() {
   const router = useRouter();
+  const { t } = useLang();
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
@@ -38,23 +40,20 @@ export default function Home() {
         <EvolisLogo size={32} />
         <div className="flex gap-2">
           <Link href="/login">
-            <Button variant="ghost">Log in</Button>
+            <Button variant="ghost">{t("landing.login")}</Button>
           </Link>
           <Link href="/login">
-            <Button>Get started</Button>
+            <Button>{t("landing.getStarted")}</Button>
           </Link>
         </div>
       </div>
 
       <section className="mx-auto max-w-3xl px-6 pb-16 pt-12 text-center">
-        <h1 className="text-4xl font-bold leading-tight text-ink md:text-5xl">Version control for your life.</h1>
-        <p className="mx-auto mt-4 max-w-xl text-lg text-muted">
-          Evolis turns your daily notes into real analytics — interests, skills, and behavior — so you can see how you've
-          actually changed, not just remember that you did.
-        </p>
+        <h1 className="text-4xl font-bold leading-tight text-ink md:text-5xl">{t("landing.hero")}</h1>
+        <p className="mx-auto mt-4 max-w-xl text-lg text-muted">{t("landing.sub")}</p>
         <div className="mt-8 flex justify-center gap-3">
           <Link href="/login">
-            <Button className="px-6 py-3 text-base">Start your first entry</Button>
+            <Button className="px-6 py-3 text-base">{t("landing.cta")}</Button>
           </Link>
         </div>
       </section>

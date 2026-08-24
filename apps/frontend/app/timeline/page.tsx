@@ -9,9 +9,11 @@ import { Badge } from "../../components/ui/Badge";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { CardSkeleton } from "../../components/ui/Skeleton";
+import { useLang } from "../../components/LangProvider";
 
 export default function TimelinePage() {
   const ready = useRequireAuth();
+  const { t } = useLang();
   const [timeline, setTimeline] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
 
@@ -29,7 +31,7 @@ export default function TimelinePage() {
 
   return (
     <AppShell>
-      <PageHeader title="Timeline" description="Topics you've touched, grouped by month." />
+      <PageHeader title={t("timeline.title")} description="Topics you've touched, grouped by month." />
 
       {loading ? (
         <div className="space-y-3">

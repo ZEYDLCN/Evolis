@@ -3,17 +3,19 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "../lib/cn";
+import { useLang } from "./LangProvider";
 
 const ITEMS = [
-  { href: "/dashboard", label: "Home", icon: "🏠" },
-  { href: "/today", label: "Today", icon: "✍️" },
-  { href: "/evolution", label: "Evolution", icon: "📈" },
-  { href: "/ask", label: "Ask", icon: "💬" },
-  { href: "/profile", label: "Profile", icon: "👤" },
+  { href: "/dashboard", key: "nav.overview", icon: "🏠" },
+  { href: "/today", key: "nav.today", icon: "✍️" },
+  { href: "/evolution", key: "nav.evolution", icon: "📈" },
+  { href: "/ask", key: "nav.ask", icon: "💬" },
+  { href: "/profile", key: "nav.profile", icon: "👤" },
 ];
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const { t } = useLang();
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-10 flex border-t border-line bg-card md:hidden">
@@ -29,7 +31,7 @@ export default function BottomNav() {
             )}
           >
             <span className="text-lg leading-none">{item.icon}</span>
-            {item.label}
+            {t(item.key)}
           </Link>
         );
       })}

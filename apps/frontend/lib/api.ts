@@ -79,6 +79,7 @@ export const api = {
   timeline: () => apiFetch<Record<string, string[]>>("/timeline"),
 
   interests: (months = 6) => apiFetch<Record<string, number>>(`/analytics/interests?months=${months}`),
+  domains: (months = 6) => apiFetch<Record<string, Record<string, number>>>(`/analytics/domains?months=${months}`),
   skills: (months = 6) => apiFetch<SkillNode[]>(`/analytics/skills?months=${months}`),
   behavior: (months = 3) => apiFetch<Behavior>(`/analytics/behavior?months=${months}`),
   skillGraph: (months = 6) => apiFetch<{ nodes: SkillNode[]; edges: { from: string; to: string }[] }>(`/analytics/skill-graph?months=${months}`),
@@ -228,6 +229,7 @@ export interface DiffResult {
   deep_work_after: number | null;
   context_switching_before: number | null;
   context_switching_after: number | null;
+  topic_domains: Record<string, string>;
 }
 
 export interface Anomaly {

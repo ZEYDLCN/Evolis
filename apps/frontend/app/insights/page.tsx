@@ -8,6 +8,7 @@ import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { CardSkeleton } from "../../components/ui/Skeleton";
+import { useLang } from "../../components/LangProvider";
 
 const CONFIDENCE_TONE: Record<string, "positive" | "negative" | "neutral" | "info"> = {
   high: "info",
@@ -69,9 +70,43 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+const DOMAIN_ICON: Record<string, string> = {
+  Skills: "🎯",
+  "Work & Projects": "💼",
+  Learning: "📚",
+  "Habits & Routines": "🔁",
+  "Personal Growth": "🌱",
+  Behavior: "📊",
+};
+
+/** Broader life tracking: the same interest scores as "Interest Drift"
+ * used to show, grouped under the five life domains (plus Behavior) —
+ * Evolis is meant to track more than just tech skills. */
+function DomainGroups({ domains }: { domains: Record<string, Record<string, number>> }) {
+  const names = Object.keys(domains);
+  if (names.length === 0) return <p className="text-sm text-muted">Not enough data yet.</p>;
+
+  return (
+    <div className="space-y-4">
+      {names.map((domain) => (
+        <div key={domain}>
+          <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
+            <span>{DOMAIN_ICON[domain] ?? "•"}</span>
+            {domain}
+          </div>
+          {Object.entries(domains[domain]).map(([topic, score]) => (
+            <Bar key={topic} label={topic} value={score} />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function InsightsPage() {
   const ready = useRequireAuth();
-  const [interests, setInterests] = useState<Record<string, number>>({});
+  const { t } = useLang();
+  const [domains, setDomains] = useState<Record<string, Record<string, number>>>({});
   const [skills, setSkills] = useState<SkillNode[]>([]);
   const [behavior, setBehavior] = useState<Behavior | null>(null);
   const [graph, setGraph] = useState<{ nodes: SkillNode[]; edges: { from: string; to: string }[] }>({ nodes: [], edges: [] });
@@ -83,7 +118,7 @@ export default function InsightsPage() {
   useEffect(() => {
     if (!ready) return;
     Promise.all([
-      api.interests(),
+      api.domains(),
       api.skills(),
       api.behavior(),
       api.skillGraph(),
@@ -91,7 +126,7 @@ export default function InsightsPage() {
       api.patterns(),
       api.trendForecast(),
     ]).then(([i, s, b, g, a, p, f]) => {
-      setInterests(i);
+      setDomains(i);
       setSkills(s);
       setBehavior(b);
       setGraph(g);
@@ -106,7 +141,7 @@ export default function InsightsPage() {
 
   return (
     <AppShell>
-      <PageHeader title="Insights" />
+      <PageHeader title={t("insights.title")} />
 
       {loading ? (
         <div className="space-y-4">
@@ -116,15 +151,11 @@ export default function InsightsPage() {
         </div>
       ) : (
         <>
-          <Section title="Interest Drift">
-            {Object.keys(interests).length === 0 ? (
-              <p className="text-sm text-muted">Not enough data yet.</p>
-            ) : (
-              Object.entries(interests).map(([topic, score]) => <Bar key={topic} label={topic} value={score} />)
-            )}
+          <Section title={t("insights.howEvolving")}>
+            <DomainGroups domains={domains} />
           </Section>
 
-          <Section title="Skills">
+          <Section title={t("insights.skills")}>
             {skills.length === 0 ? (
               <p className="text-sm text-muted">Not enough data yet.</p>
             ) : (
@@ -137,7 +168,7 @@ export default function InsightsPage() {
             )}
           </Section>
 
-          <Section title="Skill Graph">
+          <Section title={t("insights.skillGraph")}>
             {graph.edges.length === 0 ? (
               <p className="text-sm text-muted">No progression edges yet — as your skills connect (e.g. Python → Machine Learning), they'll show up here.</p>
             ) : (
@@ -150,7 +181,7 @@ export default function InsightsPage() {
           </Section>
 
           {behavior && (
-            <Section title="Behavior">
+            <Section title={t("insights.behavior")}>
               <div className="space-y-1 text-sm text-ink">
                 <div>
                   Completion Rate: {(behavior.completion_rate * 100).toFixed(0)}% ({behavior.source})
@@ -162,13 +193,13 @@ export default function InsightsPage() {
           )}
 
           {forecast && (
-            <Section title="Trend Forecast">
+            <Section title={t("insights.trendForecast")}>
               <ForecastRow label="Completion Rate" unit="" forecast={forecast.completion_rate} />
               <ForecastRow label="Deep Work" unit="h/day" forecast={forecast.deep_work_hours_per_day} />
             </Section>
           )}
 
-          <Section title="Unusual Activity">
+          <Section title={t("insights.unusualActivity")}>
             {anomalies.length === 0 ? (
               <p className="text-sm text-muted">Nothing unusual this week.</p>
             ) : (
@@ -184,7 +215,7 @@ export default function InsightsPage() {
             )}
           </Section>
 
-          <Section title="Patterns">
+          <Section title={t("insights.patterns")}>
             {patterns.length === 0 ? (
               <p className="text-sm text-muted">No strong associations detected yet.</p>
             ) : (

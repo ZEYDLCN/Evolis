@@ -1,12 +1,13 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { THEME_INIT_SCRIPT } from "../lib/theme";
+import { LangProvider } from "../components/LangProvider";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata = {
   title: "Evolis — Personal Evolution Intelligence",
-  description: "AI-powered personal evolution analytics.",
+  description: "Evolis helps you understand how your skills, focus, habits, projects and interests evolve over time.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -18,7 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="m-0 font-sans" suppressHydrationWarning>
-        {children}
+        <LangProvider>{children}</LangProvider>
       </body>
     </html>
   );

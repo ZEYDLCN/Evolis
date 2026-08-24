@@ -11,6 +11,7 @@ import { Button } from "../../components/ui/Button";
 import { Input, Textarea } from "../../components/ui/Input";
 import { Badge } from "../../components/ui/Badge";
 import { PageHeader } from "../../components/ui/PageHeader";
+import { useLang } from "../../components/LangProvider";
 import { cn } from "../../lib/cn";
 
 const STATUS_TONE: Record<string, "positive" | "negative" | "neutral"> = {
@@ -143,6 +144,7 @@ function InsightCelebration({ insight }: { insight: EntryInsight }) {
 
 export default function TodayPage() {
   const ready = useRequireAuth();
+  const { t } = useLang();
   const [text, setText] = useState("");
   const [entries, setEntries] = useState<Entry[]>([]);
   const [streak, setStreak] = useState<Streak | null>(null);
@@ -190,8 +192,8 @@ export default function TodayPage() {
 
   return (
     <AppShell>
-      <PageHeader title="Today" action={streak && <StreakBadge streak={streak} />} />
-      <p className="-mt-4 mb-6 text-sm text-muted">Tell Evolis what you worked on, learned, completed, or struggled with.</p>
+      <PageHeader title={t("today.title")} action={streak && <StreakBadge streak={streak} />} />
+      <p className="-mt-4 mb-6 text-sm text-muted">{t("today.description")}</p>
 
       {heatmap.length > 0 && (
         <Card className="mb-6">
@@ -208,7 +210,7 @@ export default function TodayPage() {
       <Card className="mb-6">
         <Textarea
           className="min-h-[110px]"
-          placeholder="What happened today? Bugün 2 saat LangGraph çalıştım, RAG pipeline geliştirdim..."
+          placeholder="What happened today? Bugün 45 dakika İngilizce çalıştım, 30 dakika yürüdüm, 2 saat proje geliştirdim..."
           value={text}
           onChange={(e) => setText(e.target.value)}
         />
@@ -226,7 +228,7 @@ export default function TodayPage() {
         </div>
         <div className="mt-4">
           <Button onClick={() => submitText(text)} disabled={submitting || !text.trim()}>
-            {submitting ? "Saving..." : "Save entry"}
+            {submitting ? t("common.loading") : t("today.saveEntry")}
           </Button>
         </div>
       </Card>
@@ -237,7 +239,7 @@ export default function TodayPage() {
         </div>
       )}
 
-      <div className="mb-3 text-sm font-semibold text-ink">Recent entries</div>
+      <div className="mb-3 text-sm font-semibold text-ink">{t("today.recentEntries")}</div>
       {loading ? (
         <p className="text-sm text-muted">Loading...</p>
       ) : entries.length === 0 ? (

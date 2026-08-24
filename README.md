@@ -10,25 +10,34 @@ Mid Green `#4AAE70`, Lime Accent `#C7F36A` — see
 
 Evolis is an AI-powered personal evolution analytics platform. You write a
 short natural-language entry about your day; it extracts structured
-activity, tracks your interests and skills over time, and shows how you
-change — as a version diff, not a habit-tracker streak.
+activity across five life domains — **Skills, Work & Projects, Learning,
+Habits & Routines, Personal Growth** (plus a Behavior signal for things
+like "low focus" or "low energy") — and shows how you change over time,
+as a version diff, not a habit-tracker streak. It's deliberately not a
+wellness app: there's no manual step-count or water-intake logging, just
+whatever you'd naturally write about your day.
 
 ```
-YOU v1.4 → YOU v1.7
+YOU v1.4 → YOU v1.8
 
-Added
-+ RAG
-+ LangGraph
+Skills
+↑ English Speaking +38%
+↑ Python +12%
 
-Improved
-↑ Deep Work +34%
-↑ Completion Rate +16%
+Work & Projects
++ Evolis
++ Voxera
+
+Habits & Routines
+↑ Reading +21%
++ Running
 
 Declining
-- Frontend
+↓ Sleep consistency
+↓ Social activity
 
-Emerging Interest
-→ Agentic AI
+Behavior Shift
+→ More structured morning routines
 ```
 
 Full product spec + architecture decisions: **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.

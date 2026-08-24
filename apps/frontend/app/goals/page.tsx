@@ -11,20 +11,35 @@ import { Badge } from "../../components/ui/Badge";
 import { Progress } from "../../components/ui/Progress";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { EmptyState } from "../../components/ui/EmptyState";
+import { useLang } from "../../components/LangProvider";
 
-function SuggestionCard({ suggestion, onAdd }: { suggestion: GoalSuggestion; onAdd: () => void }) {
+function SuggestionCard({ suggestion, onAdd, addLabel }: { suggestion: GoalSuggestion; onAdd: () => void; addLabel: string }) {
   return (
     <Card className="border-brand-emerald/20 bg-brand-lime/10">
       <div className="mb-1 text-sm font-semibold text-ink">{suggestion.title}</div>
       <p className="mb-3 text-xs text-muted">{suggestion.description}</p>
       <Button size="sm" onClick={onAdd}>
-        Add as goal
+        {addLabel}
       </Button>
     </Card>
   );
 }
 
-function GoalCard({ goal, onComplete, onDelete }: { goal: Goal; onComplete: () => void; onDelete: () => void }) {
+function GoalCard({
+  goal,
+  onComplete,
+  onDelete,
+  markDoneLabel,
+  removeLabel,
+  suggestedLabel,
+}: {
+  goal: Goal;
+  onComplete: () => void;
+  onDelete: () => void;
+  markDoneLabel: string;
+  removeLabel: string;
+  suggestedLabel: string;
+}) {
   const done = goal.status === "done";
   return (
     <Card>
@@ -32,7 +47,7 @@ function GoalCard({ goal, onComplete, onDelete }: { goal: Goal; onComplete: () =
         <div className={`text-sm font-semibold ${done ? "text-muted line-through" : "text-ink"}`}>{goal.title}</div>
         {goal.source === "suggested" && (
           <Badge tone="info" className="shrink-0">
-            Suggested
+            {suggestedLabel}
           </Badge>
         )}
       </div>
@@ -48,10 +63,10 @@ function GoalCard({ goal, onComplete, onDelete }: { goal: Goal; onComplete: () =
       {!done && (
         <div className="flex gap-2">
           <Button size="sm" variant="secondary" onClick={onComplete}>
-            Mark done
+            {markDoneLabel}
           </Button>
           <button onClick={onDelete} className="text-xs text-muted hover:text-red-600">
-            Remove
+            {removeLabel}
           </button>
         </div>
       )}
@@ -61,6 +76,7 @@ function GoalCard({ goal, onComplete, onDelete }: { goal: Goal; onComplete: () =
 
 export default function GoalsPage() {
   const ready = useRequireAuth();
+  const { t } = useLang();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [suggestions, setSuggestions] = useState<GoalSuggestion[]>([]);
   const [title, setTitle] = useState("");
@@ -110,31 +126,31 @@ export default function GoalsPage() {
 
   return (
     <AppShell>
-      <PageHeader title="Goals" description="Rule-based suggestions from your own data — you decide what becomes a real goal." />
+      <PageHeader title={t("goals.title")} description={t("goals.description")} />
 
       <Card className="mb-6">
         <form onSubmit={submit} className="flex gap-3">
           <Input placeholder="Add a custom goal" value={title} onChange={(e) => setTitle(e.target.value)} />
           <Button type="submit" disabled={!title.trim()}>
-            Add
+            {t("common.add")}
           </Button>
         </form>
       </Card>
 
       {!loading && freshSuggestions.length > 0 && (
         <div className="mb-6">
-          <div className="mb-3 text-sm font-semibold text-ink">Suggested for you</div>
+          <div className="mb-3 text-sm font-semibold text-ink">{t("goals.suggested")}</div>
           <div className="grid gap-3 md:grid-cols-2">
             {freshSuggestions.map((s, i) => (
-              <SuggestionCard key={i} suggestion={s} onAdd={() => addSuggestion(s)} />
+              <SuggestionCard key={i} suggestion={s} onAdd={() => addSuggestion(s)} addLabel={t("goals.addAsGoal")} />
             ))}
           </div>
         </div>
       )}
 
-      <div className="mb-3 text-sm font-semibold text-ink">Active</div>
+      <div className="mb-3 text-sm font-semibold text-ink">{t("goals.active")}</div>
       {loading ? (
-        <p className="text-sm text-muted">Loading...</p>
+        <p className="text-sm text-muted">{t("common.loading")}</p>
       ) : activeGoals.length === 0 ? (
         <EmptyState icon="🎯" title="No active goals yet" />
       ) : (
@@ -143,6 +159,9 @@ export default function GoalsPage() {
             <GoalCard
               key={g.id}
               goal={g}
+              markDoneLabel={t("goals.markDone")}
+              removeLabel={t("goals.remove")}
+              suggestedLabel={t("goals.suggested")}
               onComplete={async () => {
                 await api.completeGoal(g.id);
                 await load();
@@ -158,13 +177,21 @@ export default function GoalsPage() {
 
       {doneGoals.length > 0 && (
         <>
-          <div className="mb-3 text-sm font-semibold text-ink">Completed</div>
+          <div className="mb-3 text-sm font-semibold text-ink">{t("goals.completed")}</div>
           <div className="space-y-3">
             {doneGoals.map((g) => (
-              <GoalCard key={g.id} goal={g} onComplete={() => {}} onDelete={async () => {
-                await api.deleteGoal(g.id);
-                await load();
-              }} />
+              <GoalCard
+                key={g.id}
+                goal={g}
+                markDoneLabel={t("goals.markDone")}
+                removeLabel={t("goals.remove")}
+                suggestedLabel={t("goals.suggested")}
+                onComplete={() => {}}
+                onDelete={async () => {
+                  await api.deleteGoal(g.id);
+                  await load();
+                }}
+              />
             ))}
           </div>
         </>

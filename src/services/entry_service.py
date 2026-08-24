@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from src.database.models import Activity, Embedding, Entry, EntryTopic, ExtractionFeedback, Project
 from src.embeddings.embedding_service import get_embedding_model
+from src.extraction.domains import detect_behavior_signals
 from src.extraction.llm_extractor import get_extractor
 from src.monitoring.metrics import track_embedding_generation
 
@@ -33,6 +34,13 @@ def create_entry(db: Session, user_id: str, raw_text: str, entry_date: dt.date |
 
     for topic in extracted.topics:
         db.add(EntryTopic(entry_id=entry.id, topic=topic))
+
+    # Broader life tracking (not just tech/learning): a behavior signal
+    # detected in the free text becomes an ordinary topic too, tagged
+    # "behavior" by src.extraction.domains.classify_domain — no new table,
+    # so it flows through interest scores, diffs, and Ask Evolis for free.
+    for signal in detect_behavior_signals(raw_text):
+        db.add(EntryTopic(entry_id=entry.id, topic=signal))
 
     for activity in extracted.activities:
         project_id = None
