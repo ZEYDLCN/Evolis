@@ -281,3 +281,34 @@ class FocusSession(Base):
     started_at: Mapped[dt.datetime] = mapped_column(DateTime)
     duration_minutes: Mapped[int] = mapped_column(Integer)
     is_deep_work: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class EvolutionEvent(Base):
+    """Turning Points / Decisions — "Evolution Forks" internally.
+
+    A point on the user's timeline that isn't a metric, it's a moment:
+    either a decision they explicitly logged (source="manual", or
+    source="detected" when a decision-marker phrase was caught in an
+    entry — see src/extraction/decisions.py) or a data-detected shift in
+    their activity profile the user chose to confirm as a turning point
+    (source="detected", confirmed by the user creating this row — a
+    candidate that's never confirmed is never persisted here at all, see
+    src/analytics/turning_points.py's stateless candidate detector).
+
+    Deliberately never stores a counterfactual ("what if you'd chosen
+    Backend") — `metadata_json.alternatives` records what was *considered*,
+    never what would have happened.
+    """
+
+    __tablename__ = "evolution_events"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    type: Mapped[str] = mapped_column(String(20))  # decision | turning_point | milestone
+    title: Mapped[str] = mapped_column(String(200))
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    event_date: Mapped[dt.date] = mapped_column(DateTime)
+    source: Mapped[str] = mapped_column(String(20), default="manual")  # manual | detected
+    entry_id: Mapped[str | None] = mapped_column(ForeignKey("entries.id"), nullable=True)
+    metadata_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=_now)

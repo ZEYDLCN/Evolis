@@ -143,6 +143,20 @@ export const api = {
   deleteAccount: () => apiFetch<void>("/me", { method: "DELETE" }),
 
   ask: (question: string) => apiFetch<AskResult>("/ask", { method: "POST", body: JSON.stringify({ question }) }),
+
+  listEvolutionEvents: () => apiFetch<EvolutionEvent[]>("/evolution-events"),
+  createEvolutionEvent: (payload: {
+    type: "decision" | "turning_point" | "milestone";
+    title: string;
+    event_date: string;
+    description?: string;
+    alternatives?: string[];
+    chosen?: string;
+  }) => apiFetch<EvolutionEvent>("/evolution-events", { method: "POST", body: JSON.stringify(payload) }),
+  deleteEvolutionEvent: (id: string) => apiFetch<void>(`/evolution-events/${id}`, { method: "DELETE" }),
+  eventImpact: (id: string) => apiFetch<DecisionImpact>(`/evolution-events/${id}/impact`),
+  rankedDecisions: () => apiFetch<RankedDecision[]>("/evolution-events/decisions/ranked"),
+  turningPointCandidates: () => apiFetch<TurningPointCandidate[]>("/evolution-events/turning-points/candidates"),
 };
 
 export interface EntryInsight {
@@ -430,6 +444,46 @@ export interface Me {
   google_linked: boolean;
   created_at: string;
   encryption_enabled: boolean;
+}
+
+export interface EvolutionEvent {
+  id: string;
+  type: "decision" | "turning_point" | "milestone";
+  title: string;
+  description: string | null;
+  event_date: string;
+  source: "manual" | "detected";
+  entry_id: string | null;
+  metadata: { alternatives?: string[]; chosen?: string } | null;
+  created_at: string;
+}
+
+export interface DecisionImpact {
+  event: EvolutionEvent;
+  has_enough_after_data: boolean;
+  topics_before: Record<string, number>;
+  topics_after: Record<string, number>;
+  behavior_before: Behavior;
+  behavior_after: Behavior;
+  topic_changes: { topic: string; before: number; after: number; change: number }[];
+  new_topics: string[];
+  faded_topics: string[];
+}
+
+export interface RankedDecision {
+  event: EvolutionEvent;
+  magnitude: number;
+  top_change: { topic: string; before: number; after: number; change: number } | null;
+}
+
+export interface TurningPointCandidate {
+  week_start: string;
+  shift_score: number;
+  confidence: "low" | "medium" | "high";
+  metrics_before: Record<string, number>;
+  metrics_after: Record<string, number>;
+  new_topics: string[];
+  faded_topics: string[];
 }
 
 export interface GoalSuggestion {

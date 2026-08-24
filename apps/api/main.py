@@ -14,6 +14,7 @@ from apps.api.routers import (
     day,
     diff,
     entries,
+    evolution_events,
     focus,
     goals,
     graph,
@@ -93,3 +94,4 @@ app.include_router(goals.router)
 app.include_router(day.router)
 app.include_router(focus.router)
 app.include_router(notifications.router)
+app.include_router(evolution_events.router)

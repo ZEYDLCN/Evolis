@@ -15,6 +15,7 @@ QueryClass = Literal[
     "behavior_pattern",
     "timeline",
     "comparison",
+    "decision_impact",
     "search",
 ]
 
@@ -30,6 +31,10 @@ QueryClass = Literal[
 # "Neden daha az proje bitiriyorum?", a behavior_pattern example), so it's
 # deliberately last.
 _PATTERNS: list[tuple[QueryClass, re.Pattern]] = [
+    (
+        "decision_impact",
+        re.compile(r"hangi karar|which decision|karar.*(değiş|etkile)|decision.*(change|shift|impact)", re.IGNORECASE),
+    ),
     ("comparison", re.compile(r"\bvs\b|karşılaştır|fark|arasında", re.IGNORECASE)),
     ("timeline", re.compile(r"ne zaman|\bwhen\b|zaman çizelgesi|timeline", re.IGNORECASE)),
     ("skill_progress", re.compile(r"skill|beceri|ilerle|öğren", re.IGNORECASE)),

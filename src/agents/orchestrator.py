@@ -22,7 +22,10 @@ user's question and a JSON payload of pre-computed analytics (interest
 scores, skill scores, behavior metrics, retrieved past entries). Answer the
 question using ONLY numbers present in the payload — never invent a
 percentage or count. Be concise, second person, and specific. Respond in the
-same language as the question."""
+same language as the question. If the payload includes "ranked_decisions",
+describe them as changes that coincide with or were observed after the
+decision — never claim the decision caused the change, and never speculate
+about what would have happened had a different alternative been chosen."""
 
 
 def ask(db: Session, user_id: str, question: str, lang: str = "en") -> dict:
@@ -61,6 +64,9 @@ def _explain(question: str, analysis: dict, lang: str = "en") -> str:
 
 def _template_explain(analysis: dict, lang: str = "en") -> str:
     parts = []
+    if "ranked_decisions" in analysis:
+        return _explain_ranked_decisions(analysis["ranked_decisions"], lang)
+
     if lang == "tr":
         if "interests" in analysis and analysis["interests"]:
             top = list(analysis["interests"].items())[:3]
@@ -89,3 +95,39 @@ def _template_explain(analysis: dict, lang: str = "en") -> str:
     if "retrieved_entries" in analysis and analysis["retrieved_entries"]:
         parts.append(f"Found {len(analysis['retrieved_entries'])} related past entries.")
     return " ".join(parts) or "Not enough data yet to answer this."
+
+
+def _explain_ranked_decisions(ranked: list[dict], lang: str) -> str:
+    """"Which decisions changed my direction the most?" — always phrased as
+    coincidence/correlation ("coincide with"), never causation ("caused").
+    See src/services/evolution_event_service.py for the no-causal-claims
+    and no-fabricated-counterfactual rules this must keep honoring."""
+    if not ranked:
+        return (
+            "Henüz yeterli sonrası-verisi olan bir karar yok, bu yüzden dönüm noktalarını sıralayamıyorum."
+            if lang == "tr"
+            else "No decisions have enough after-the-fact data yet to rank."
+        )
+
+    lines = []
+    for i, r in enumerate(ranked, 1):
+        title = r["event"]["title"]
+        top_change = r.get("top_change")
+        if top_change:
+            topic, change = top_change["topic"], top_change["change"]
+            sign = "+" if change >= 0 else ""
+            detail = (
+                f"{topic} ilgisinde {sign}{round(change * 100)} puan değişim gözlendi"
+                if lang == "tr"
+                else f"{topic} interest shifted {sign}{round(change * 100)} pts"
+            )
+        else:
+            detail = "genel davranışta gözlenen değişim" if lang == "tr" else "an observed shift in overall behavior"
+        lines.append(f"{i}. {title} → {detail}")
+
+    header = (
+        f"{len(ranked)} karar, gözlenen en büyük davranışsal değişimlerle örtüşüyor (bu bir nedensellik iddiası değildir):"
+        if lang == "tr"
+        else f"{len(ranked)} decision(s) coincide with your largest observed shifts (this isn't a causal claim):"
+    )
+    return header + " " + " ".join(lines)

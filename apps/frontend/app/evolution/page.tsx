@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import AppShell from "../../components/AppShell";
 import { useRequireAuth } from "../../lib/useAuth";
-import { api, fetchSvg, ApiError, DiffResult, Version } from "../../lib/api";
+import { api, fetchSvg, ApiError, DiffResult, Version, EvolutionEvent, DecisionImpact, TurningPointCandidate, RankedDecision } from "../../lib/api";
 import { Card } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { Input, Label } from "../../components/ui/Input";
@@ -34,7 +34,7 @@ function EvolutionPageInner() {
   const ready = useRequireAuth();
   const { t } = useLang();
   const searchParams = useSearchParams();
-  const VALID_TABS = ["current", "history", "compare", "release_notes"];
+  const VALID_TABS = ["current", "history", "compare", "release_notes", "turning_points"];
   const tabParam = searchParams.get("tab");
   const [tab, setTab] = useState(tabParam && VALID_TABS.includes(tabParam) ? tabParam : "current");
   const [versions, setVersions] = useState<Version[]>([]);
@@ -60,6 +60,7 @@ function EvolutionPageInner() {
           { key: "history", label: t("evolution.tab.history") },
           { key: "compare", label: t("evolution.tab.compare") },
           { key: "release_notes", label: t("evolution.tab.releaseNotes") },
+          { key: "turning_points", label: t("evolution.tab.turningPoints") },
         ]}
       />
 
@@ -69,8 +70,10 @@ function EvolutionPageInner() {
         <VersionHistoryTab versions={versions} onGenerated={(v) => setVersions((prev) => [...prev, v])} />
       ) : tab === "compare" ? (
         <CompareTab versions={versions} />
-      ) : (
+      ) : tab === "release_notes" ? (
         <ReleaseNotesTab versions={versions} />
+      ) : (
+        <TurningPointsTab />
       )}
     </AppShell>
   );
@@ -538,6 +541,312 @@ function ReleaseNotesTab({ versions }: { versions: Version[] }) {
           </Button>
         </Card>
       )}
+    </div>
+  );
+}
+
+/** Evolution Forks / Turning Points: decisions the user logged (or Evolis
+ * auto-detected from free text), plus statistically-detected candidate
+ * shifts the user can confirm. Every wording choice here follows the
+ * product's non-negotiable rule: describe what was *observed after* a
+ * decision, never that the decision *caused* it, and never speculate
+ * about the unchosen alternative. */
+function TurningPointsTab() {
+  const { t } = useLang();
+  const [events, setEvents] = useState<EvolutionEvent[]>([]);
+  const [candidates, setCandidates] = useState<TurningPointCandidate[]>([]);
+  const [ranked, setRanked] = useState<RankedDecision[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  async function reload() {
+    const [ev, cand, rank] = await Promise.all([
+      api.listEvolutionEvents(),
+      api.turningPointCandidates(),
+      api.rankedDecisions(),
+    ]);
+    setEvents(ev);
+    setCandidates(cand);
+    setRanked(rank);
+  }
+
+  useEffect(() => {
+    reload().finally(() => setLoading(false));
+  }, []);
+
+  async function confirmCandidate(c: TurningPointCandidate) {
+    await api.createEvolutionEvent({
+      type: "turning_point",
+      title: t("turningPoints.turningPoint"),
+      event_date: c.week_start,
+    });
+    await reload();
+  }
+
+  async function dismissCandidate(c: TurningPointCandidate) {
+    setCandidates((prev) => prev.filter((x) => x.week_start !== c.week_start));
+  }
+
+  async function removeEvent(id: string) {
+    await api.deleteEvolutionEvent(id);
+    setEvents((prev) => prev.filter((e) => e.id !== id));
+    if (expandedId === id) setExpandedId(null);
+  }
+
+  if (loading) return null;
+
+  return (
+    <div className="space-y-6">
+      <p className="text-sm text-muted">{t("turningPoints.description")}</p>
+
+      <LogDecisionForm onLogged={reload} />
+
+      {ranked.length > 0 && (
+        <Card>
+          <div className="mb-3 text-sm font-semibold text-ink">{t("turningPoints.rankedTitle")}</div>
+          <div className="space-y-2">
+            {ranked.map((r, i) => (
+              <div key={r.event.id} className="flex flex-wrap items-center gap-2 text-sm text-ink">
+                <span className="font-mono text-muted">{i + 1}.</span>
+                <span className="font-semibold">{r.event.title}</span>
+                {r.top_change && (
+                  <Badge tone={r.top_change.change >= 0 ? "positive" : "negative"}>
+                    {r.top_change.topic} {r.top_change.change >= 0 ? "+" : ""}
+                    {Math.round(r.top_change.change * 100)}%
+                  </Badge>
+                )}
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      <Card>
+        <div className="mb-1 text-sm font-semibold text-ink">{t("turningPoints.candidatesTitle")}</div>
+        <p className="mb-3 text-xs text-muted">{t("turningPoints.candidatesDescription")}</p>
+        {candidates.length === 0 ? (
+          <p className="text-sm text-muted">{t("turningPoints.noCandidates")}</p>
+        ) : (
+          <div className="space-y-3">
+            {candidates.map((c) => (
+              <div key={c.week_start} className="rounded-xl border border-line p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="text-sm font-semibold text-ink">
+                    {monthLabel(c.week_start)} <Badge tone="info">{c.confidence}</Badge>
+                  </div>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {c.new_topics.map((topic) => (
+                    <Badge key={topic} tone="positive">
+                      + {topic}
+                    </Badge>
+                  ))}
+                  {c.faded_topics.map((topic) => (
+                    <Badge key={topic} tone="neutral">
+                      - {topic}
+                    </Badge>
+                  ))}
+                </div>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <span className="text-xs text-muted">{t("turningPoints.whatHappened")}</span>
+                  <Button variant="secondary" onClick={() => confirmCandidate(c)}>
+                    {t("turningPoints.markAsTurningPoint")}
+                  </Button>
+                  <button className="text-xs text-muted hover:underline" onClick={() => dismissCandidate(c)}>
+                    {t("turningPoints.dismiss")}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      <Card>
+        <div className="mb-3 text-sm font-semibold text-ink">{t("turningPoints.timeline")}</div>
+        {events.length === 0 ? (
+          <p className="text-sm text-muted">{t("turningPoints.noEvents")}</p>
+        ) : (
+          <div className="space-y-3">
+            {events.map((event) => (
+              <div key={event.id} className="rounded-xl border border-line p-3">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={
+                          event.type === "decision"
+                            ? "h-2.5 w-2.5 rotate-45 bg-brand-emerald"
+                            : "h-2.5 w-2.5 rounded-full bg-brand-emerald"
+                        }
+                      />
+                      <span className="font-semibold text-ink">{event.title}</span>
+                      <Badge tone="neutral">
+                        {event.type === "decision"
+                          ? t("turningPoints.decision")
+                          : event.type === "turning_point"
+                          ? t("turningPoints.turningPoint")
+                          : t("turningPoints.milestone")}
+                      </Badge>
+                      {event.source === "detected" && <Badge tone="info">{t("turningPoints.detected")}</Badge>}
+                    </div>
+                    <div className="mt-1 text-xs text-muted">{event.event_date}</div>
+                    {event.metadata?.chosen && (
+                      <div className="mt-1 text-xs text-muted">
+                        {t("turningPoints.chosenDirection")}: {event.metadata.chosen}
+                        {event.metadata.alternatives?.length ? ` (${t("turningPoints.alternativeConsidered")}: ${event.metadata.alternatives.join(", ")})` : ""}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      className="text-xs font-semibold text-brand-emerald hover:underline"
+                      onClick={() => setExpandedId(expandedId === event.id ? null : event.id)}
+                    >
+                      {expandedId === event.id ? t("turningPoints.hideReview") : t("turningPoints.viewReview")}
+                    </button>
+                    <button className="text-xs text-muted hover:underline" onClick={() => removeEvent(event.id)}>
+                      {t("turningPoints.delete")}
+                    </button>
+                  </div>
+                </div>
+                {expandedId === event.id && <DecisionReview eventId={event.id} />}
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+function LogDecisionForm({ onLogged }: { onLogged: () => void }) {
+  const { t } = useLang();
+  const [title, setTitle] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [alternative, setAlternative] = useState("");
+  const [chosen, setChosen] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!title.trim()) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await api.createEvolutionEvent({
+        type: "decision",
+        title: title.trim(),
+        event_date: date,
+        alternatives: alternative.trim() ? [alternative.trim()] : undefined,
+        chosen: chosen.trim() || undefined,
+      });
+      setTitle("");
+      setAlternative("");
+      setChosen("");
+      onLogged();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t("turningPoints.failedToSave"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Card>
+      <div className="mb-3 text-sm font-semibold text-ink">{t("turningPoints.logDecision")}</div>
+      <form onSubmit={submit} className="space-y-3">
+        <div>
+          <Label>{t("turningPoints.decisionTitle")}</Label>
+          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("turningPoints.decisionTitlePlaceholder")} />
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <div className="min-w-[140px]">
+            <Label>{t("turningPoints.date")}</Label>
+            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          </div>
+          <div className="min-w-[180px] flex-1">
+            <Label>
+              {t("turningPoints.alternativeConsidered")} <span className="text-muted">({t("turningPoints.optional")})</span>
+            </Label>
+            <Input value={alternative} onChange={(e) => setAlternative(e.target.value)} />
+          </div>
+          <div className="min-w-[180px] flex-1">
+            <Label>
+              {t("turningPoints.chosenDirection")} <span className="text-muted">({t("turningPoints.optional")})</span>
+            </Label>
+            <Input value={chosen} onChange={(e) => setChosen(e.target.value)} />
+          </div>
+        </div>
+        <Button type="submit" disabled={saving || !title.trim()}>
+          {saving ? t("turningPoints.saving") : t("turningPoints.save")}
+        </Button>
+        {error && <p className="text-sm text-red-600">{error}</p>}
+      </form>
+    </Card>
+  );
+}
+
+function DecisionReview({ eventId }: { eventId: string }) {
+  const { t } = useLang();
+  const [impact, setImpact] = useState<DecisionImpact | null>(null);
+
+  useEffect(() => {
+    api.eventImpact(eventId).then(setImpact);
+  }, [eventId]);
+
+  if (!impact) return null;
+
+  if (!impact.has_enough_after_data) {
+    return <p className="mt-3 text-sm text-muted">{t("turningPoints.notEnoughAfterData")}</p>;
+  }
+
+  return (
+    <div className="mt-4 border-t border-line pt-3">
+      <div className="text-xs font-semibold uppercase tracking-wide text-muted">{t("turningPoints.observedChanges")}</div>
+      <p className="mt-1 text-xs italic text-muted">{t("turningPoints.notCausal")}</p>
+
+      {impact.topic_changes.length > 0 && (
+        <div className="mt-3 space-y-1.5">
+          {impact.topic_changes.map((c) => (
+            <div key={c.topic} className="flex items-center gap-2 text-sm text-ink">
+              <span className="w-32 shrink-0">{c.topic}</span>
+              <span className="text-muted">
+                {t("turningPoints.before")} {Math.round(c.before * 100)}% → {t("turningPoints.after")} {Math.round(c.after * 100)}%
+              </span>
+              <DeltaBadge changePct={c.change} isPositive={c.change >= 0} />
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {impact.new_topics.length > 0 && (
+          <div>
+            <div className="mb-1 text-xs font-semibold text-muted">{t("turningPoints.newTopics")}</div>
+            <div className="flex flex-wrap gap-1.5">
+              {impact.new_topics.map((topic) => (
+                <Badge key={topic} tone="positive">
+                  + {topic}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+        {impact.faded_topics.length > 0 && (
+          <div>
+            <div className="mb-1 text-xs font-semibold text-muted">{t("turningPoints.fadedTopics")}</div>
+            <div className="flex flex-wrap gap-1.5">
+              {impact.faded_topics.map((topic) => (
+                <Badge key={topic} tone="neutral">
+                  - {topic}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

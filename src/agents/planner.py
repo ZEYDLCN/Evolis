@@ -33,7 +33,15 @@ def build_plan(question: str, query_class: QueryClass, now: dt.datetime | None =
 
     start = now - dt.timedelta(days=30 * months_back)
 
-    use_sql = query_class in {"interest_change", "skill_progress", "project_analysis", "behavior_pattern", "comparison", "timeline"}
+    use_sql = query_class in {
+        "interest_change",
+        "skill_progress",
+        "project_analysis",
+        "behavior_pattern",
+        "comparison",
+        "timeline",
+        "decision_impact",
+    }
     use_vector_search = query_class in {"search", "behavior_pattern", "comparison"}
 
     return QueryPlan(query_class=query_class, start=start, end=now, use_sql=use_sql, use_vector_search=use_vector_search)

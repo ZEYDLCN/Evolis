@@ -9,6 +9,7 @@ from src.analytics.productivity import behavior_summary
 from src.analytics.skills import skill_scores
 from src.database.models import Entry
 from src.rag.retriever import RetrievedEntry, hybrid_search
+from src.services.evolution_event_service import rank_decisions_by_impact
 
 
 def run_analysis(db: Session, user_id: str, plan: QueryPlan, question: str) -> dict:
@@ -24,6 +25,12 @@ def run_analysis(db: Session, user_id: str, plan: QueryPlan, question: str) -> d
         result["interests"] = topic_interest_scores(db, user_id, plan.start, plan.end)
         result["skills"] = skill_scores(db, user_id, plan.start, plan.end)
         result["behavior"] = behavior_summary(db, user_id, plan.start, plan.end)
+
+    if plan.query_class == "decision_impact":
+        # "Which decisions changed my direction the most?" — ranked by
+        # magnitude of coincident change, never phrased as causal (see
+        # src/services/evolution_event_service.py's module docstring).
+        result["ranked_decisions"] = rank_decisions_by_impact(db, user_id)
 
     if plan.use_vector_search:
         hits: list[RetrievedEntry] = hybrid_search(db, user_id, question, top_k=5)

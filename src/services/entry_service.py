@@ -10,8 +10,9 @@ import datetime as dt
 
 from sqlalchemy.orm import Session
 
-from src.database.models import Activity, Embedding, Entry, EntryTopic, ExtractionFeedback, Project
+from src.database.models import Activity, Embedding, Entry, EntryTopic, EvolutionEvent, ExtractionFeedback, Project
 from src.embeddings.embedding_service import get_embedding_model
+from src.extraction.decisions import detect_decision_signal
 from src.extraction.domains import detect_behavior_signals
 from src.extraction.llm_extractor import get_extractor
 from src.monitoring.metrics import track_embedding_generation
@@ -41,6 +42,24 @@ def create_entry(db: Session, user_id: str, raw_text: str, entry_date: dt.date |
     # so it flows through interest scores, diffs, and Ask Evolis for free.
     for signal in detect_behavior_signals(raw_text):
         db.add(EntryTopic(entry_id=entry.id, topic=signal))
+
+    # Evolution Forks (Turning Points feature): a decision-marker phrase
+    # in the entry becomes a timeline event automatically. Kept separate
+    # from the manual "log a decision" flow (src/services/evolution_event_service.py)
+    # so a user who never writes "karar verdim" explicitly can still add one by hand.
+    decision = detect_decision_signal(raw_text)
+    if decision:
+        db.add(
+            EvolutionEvent(
+                user_id=user_id,
+                type="decision",
+                title=decision.title,
+                event_date=entry.entry_date,
+                source="detected",
+                entry_id=entry.id,
+                metadata_json={"alternatives": decision.alternatives, "chosen": decision.chosen} if decision.alternatives else None,
+            )
+        )
 
     for activity in extracted.activities:
         project_id = None

@@ -18,3 +18,8 @@ def test_classifies_english():
 
 def test_unmatched_question_falls_back_to_search():
     assert classify_query("Voxera'da ne yaptım?") == "search"
+
+
+def test_classifies_decision_impact():
+    assert classify_query("Which decisions changed my direction the most?") == "decision_impact"
+    assert classify_query("Hangi kararlar yönümü en çok değiştirdi?") == "decision_impact"
