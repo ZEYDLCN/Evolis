@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { clearToken } from "../lib/api";
 import { cn } from "../lib/cn";
 import EvolisLogo from "./EvolisLogo";
+import ThemeToggle from "./ThemeToggle";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Overview" },
@@ -54,6 +55,7 @@ export default function Sidebar() {
       </nav>
 
       <div className="mt-auto flex flex-col gap-1 border-t border-line pt-3">
+        <ThemeToggle className="mb-1 flex items-center justify-between rounded-xl px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface hover:text-ink" />
         <Link
           href="/profile"
           className={cn(

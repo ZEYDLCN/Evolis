@@ -36,7 +36,12 @@ export default function EvolisLogo({ size = 40, showTagline = false }: { size?: 
       </svg>
 
       <div>
-        <div style={{ fontSize: size < 32 ? 16 : 22, fontWeight: 500, letterSpacing: "0.14em", color: BRAND.deepForest, lineHeight: 1.1 }}>
+        {/* text-ink (not a hardcoded hex) so the wordmark stays legible
+         * against both the light and dark sidebar background — section 47. */}
+        <div
+          className="text-ink"
+          style={{ fontSize: size < 32 ? 16 : 22, fontWeight: 500, letterSpacing: "0.14em", lineHeight: 1.1 }}
+        >
           EVOLIS
         </div>
         {showTagline && (

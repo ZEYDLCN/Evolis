@@ -118,6 +118,7 @@ export const api = {
   releaseNotes: (base: string, target: string) =>
     apiFetch<{ text: string }>(`/release-notes?base=${encodeURIComponent(base)}&target=${encodeURIComponent(target)}`),
 
+  me: () => apiFetch<Me>("/me"),
   exportData: () => apiFetch<Record<string, unknown>>("/me/export"),
   deleteAccount: () => apiFetch<void>("/me", { method: "DELETE" }),
 
@@ -363,6 +364,14 @@ export interface Goal {
   source: string;
   created_at: string;
   completed_at: string | null;
+}
+
+export interface Me {
+  id: string;
+  email: string;
+  display_name: string | null;
+  google_linked: boolean;
+  created_at: string;
 }
 
 export interface GoalSuggestion {

@@ -159,6 +159,18 @@ def test_knowledge_graph_endpoints(client):
     assert r.json()["synced"] is False  # NEO4J_URI not configured in tests
 
 
+def test_me_endpoint(client):
+    email = f"{uuid.uuid4()}@example.com"
+    r = client.post("/auth/register", json={"email": email, "password": "hunter2"})
+    headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
+
+    r = client.get("/me", headers=headers)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["email"] == email
+    assert body["google_linked"] is False
+
+
 def test_account_export_and_delete(client):
     headers = _auth_headers(client)
     client.post("/entries", json={"text": "Docker ile uğraştım."}, headers=headers)

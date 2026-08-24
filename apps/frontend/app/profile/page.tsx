@@ -1,16 +1,24 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import AppShell from "../../components/AppShell";
+import ThemeToggle from "../../components/ThemeToggle";
 import { useRequireAuth } from "../../lib/useAuth";
-import { api, clearToken } from "../../lib/api";
+import { api, clearToken, Me } from "../../lib/api";
 import { Card } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
+import { Badge } from "../../components/ui/Badge";
 import { PageHeader } from "../../components/ui/PageHeader";
 
 export default function ProfilePage() {
   const ready = useRequireAuth();
   const router = useRouter();
+  const [me, setMe] = useState<Me | null>(null);
+
+  useEffect(() => {
+    if (ready) api.me().then(setMe);
+  }, [ready]);
 
   async function exportData() {
     const data = await api.exportData();
@@ -34,10 +42,42 @@ export default function ProfilePage() {
 
   return (
     <AppShell>
-      <PageHeader title="Profile" description="Account and privacy settings." />
+      <PageHeader title="Settings" description="Account, appearance, and privacy." />
+
+      <Card className="mb-6">
+        <div className="mb-3 text-sm font-semibold text-ink">Account</div>
+        {me ? (
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-muted">Email</span>
+              <span className="text-ink">{me.email}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted">Signed up</span>
+              <span className="text-ink">{new Date(me.created_at).toLocaleDateString()}</span>
+            </div>
+            {me.google_linked && (
+              <div className="flex items-center justify-between">
+                <span className="text-muted">Sign-in method</span>
+                <Badge tone="info">Google</Badge>
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-sm text-muted">Loading...</p>
+        )}
+      </Card>
+
+      <Card className="mb-6">
+        <div className="mb-3 text-sm font-semibold text-ink">Appearance</div>
+        <ThemeToggle />
+      </Card>
 
       <Card>
         <div className="mb-3 text-sm font-semibold text-ink">Privacy</div>
+        <p className="mb-3 text-xs text-muted">
+          Your entries are yours. Export everything Evolis has stored about you, or permanently delete your account.
+        </p>
         <div className="flex flex-wrap gap-3">
           <Button variant="secondary" onClick={exportData}>
             Export my data

@@ -11,6 +11,14 @@ import { EmptyState } from "../../components/ui/EmptyState";
 import { InsightCard } from "../../components/ui/InsightCard";
 import { DeltaBadge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
+import { InfoTooltip } from "../../components/ui/InfoTooltip";
+
+const EVOLIS_SCORE_EXPLANATIONS: Record<string, string> = {
+  Consistency: "How many of the last 30 days had an entry, plus a bonus for your current streak.",
+  Focus: "Average deep-work hours per day, balanced against how often you switch topics.",
+  Execution: "Your task/entry completion rate over the last 30 days, rescaled to 0-100.",
+  Learning: "How many learning-tagged activities you logged versus a 12-session monthly target.",
+};
 
 function greeting(): string {
   const hour = new Date().getHours();
@@ -170,7 +178,10 @@ export default function DashboardPage() {
                   ] as [string, number][]
                 ).map(([label, value]) => (
                   <div key={label}>
-                    <div className="text-xs uppercase tracking-wide text-muted">{label}</div>
+                    <div className="flex items-center text-xs uppercase tracking-wide text-muted">
+                      {label}
+                      <InfoTooltip text={EVOLIS_SCORE_EXPLANATIONS[label]} />
+                    </div>
                     <div className="mt-1 text-xl font-semibold text-ink">{value}</div>
                     <div className="mt-1.5 h-1.5 rounded-full bg-surface">
                       <div className="h-full rounded-full bg-brand-emerald" style={{ width: `${value}%` }} />

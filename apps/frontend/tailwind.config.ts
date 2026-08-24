@@ -4,7 +4,14 @@ import type { Config } from "tailwindcss";
 // this implements. Brand greens are accents, not the whole UI: the base
 // surface/text/border scale is deliberately neutral so green stays a
 // signal (growth, success, primary actions) instead of wallpaper.
+// Neutral tokens (surface/card/ink/muted/line) are CSS variables so Dark
+// Mode (section 47) can repaint them from globals.css without touching a
+// single component — every component already uses the semantic class name
+// (bg-surface, text-ink, ...) rather than a raw hex. Brand greens stay
+// fixed across themes; they're accents, already vibrant enough to read on
+// both a light and a dark neutral base.
 const config: Config = {
+  darkMode: "class",
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
     extend: {
@@ -15,11 +22,11 @@ const config: Config = {
           mid: "#4AAE70",
           lime: "#C7F36A",
         },
-        surface: "#F8FAF9",
-        card: "#FFFFFF",
-        ink: "#102019",
-        muted: "#6B7D73",
-        line: "#E4ECE7",
+        surface: "rgb(var(--color-surface) / <alpha-value>)",
+        card: "rgb(var(--color-card) / <alpha-value>)",
+        ink: "rgb(var(--color-ink) / <alpha-value>)",
+        muted: "rgb(var(--color-muted) / <alpha-value>)",
+        line: "rgb(var(--color-line) / <alpha-value>)",
       },
       fontFamily: {
         sans: ["var(--font-sans)", "Inter", "Manrope", "system-ui", "sans-serif"],

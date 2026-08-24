@@ -2,6 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Dark Mode (section 47): neutral tokens as RGB triples (no `#`, no
+   `rgb()`) so tailwind.config.ts's rgb(var(--x) / <alpha-value>) pattern
+   can apply opacity modifiers like bg-surface/10. Brand greens are
+   defined once in tailwind.config.ts and never change with the theme. */
+:root {
+  --color-surface: 248 250 249; /* #F8FAF9 */
+  --color-card: 255 255 255; /* #FFFFFF */
+  --color-ink: 16 32 25; /* #102019 */
+  --color-muted: 107 125 115; /* #6B7D73 */
+  --color-line: 228 236 231; /* #E4ECE7 */
+}
+
+.dark {
+  --color-surface: 10 20 16; /* #0A1410 */
+  --color-card: 18 32 26; /* #12201A */
+  --color-ink: 235 244 239; /* #EBF4EF */
+  --color-muted: 148 168 158; /* #94A89E */
+  --color-line: 39 58 49; /* #273A31 */
+}
+
 @layer base {
   body {
     @apply bg-surface text-ink antialiased;
