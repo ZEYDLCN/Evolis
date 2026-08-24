@@ -3,29 +3,83 @@
 import { useState } from "react";
 import AppShell from "../../components/AppShell";
 import { useRequireAuth } from "../../lib/useAuth";
-import { api, AskResult, ApiError } from "../../lib/api";
+import { api, AskEvidence, ApiError } from "../../lib/api";
 import { Card } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Badge } from "../../components/ui/Badge";
 import { PageHeader } from "../../components/ui/PageHeader";
+import { cn } from "../../lib/cn";
 
-const SUGGESTIONS = ["Son 6 ayda nasıl değiştim?", "Hangi konulara ilgim arttı?", "Son 3 ayda en fazla zaman ayırdığım teknik alan ne?"];
+const SUGGESTIONS = [
+  "How have I changed?",
+  "What am I focusing on lately?",
+  "What skill is growing fastest?",
+  "Why has my completion rate changed?",
+  "What patterns should I notice?",
+];
+
+interface ChatMessage {
+  role: "user" | "assistant";
+  text: string;
+  queryClass?: string;
+  evidence?: AskEvidence;
+}
+
+function EvidencePanel({ evidence }: { evidence: AskEvidence }) {
+  const [expanded, setExpanded] = useState(false);
+  if (evidence.entries_analyzed === 0 && evidence.bullets.length === 0) return null;
+
+  return (
+    <div className="mt-3 border-t border-line pt-3">
+      <div className="text-xs font-medium text-muted">
+        Based on {evidence.entries_analyzed} {evidence.entries_analyzed === 1 ? "entry" : "entries"}
+      </div>
+      {evidence.bullets.length > 0 && (
+        <ul className="mt-1.5 space-y-0.5">
+          {evidence.bullets.map((b, i) => (
+            <li key={i} className="text-xs text-muted">
+              • {b}
+            </li>
+          ))}
+        </ul>
+      )}
+      {evidence.source_entries.length > 0 && (
+        <>
+          <button onClick={() => setExpanded((e) => !e)} className="mt-2 text-xs font-semibold text-brand-emerald hover:underline">
+            {expanded ? "Hide evidence" : "View evidence"}
+          </button>
+          {expanded && (
+            <div className="mt-2 space-y-2">
+              {evidence.source_entries.map((text, i) => (
+                <div key={i} className="rounded-lg bg-surface p-2.5 text-xs text-ink">
+                  {text}
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function AskPage() {
   const ready = useRequireAuth();
   const [question, setQuestion] = useState("");
-  const [result, setResult] = useState<AskResult | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function ask(q: string) {
-    if (!q.trim()) return;
+    if (!q.trim() || loading) return;
     setError(null);
+    setQuestion("");
+    setMessages((prev) => [...prev, { role: "user", text: q }]);
     setLoading(true);
-    setResult(null);
     try {
-      setResult(await api.ask(q));
+      const result = await api.ask(q);
+      setMessages((prev) => [...prev, { role: "assistant", text: result.answer, queryClass: result.query_class, evidence: result.evidence }]);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to get an answer");
     } finally {
@@ -39,47 +93,68 @@ export default function AskPage() {
     <AppShell>
       <PageHeader title="Ask Evolis" description="Ask a question about your own history — every number in the answer is computed, not guessed." />
 
-      <Card className="mb-4">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            ask(question);
-          }}
-          className="flex gap-3"
-        >
-          <Input placeholder="Son 6 ayda nasıl değiştim?" value={question} onChange={(e) => setQuestion(e.target.value)} />
-          <Button type="submit" disabled={loading || !question.trim()}>
-            {loading ? "..." : "Ask"}
-          </Button>
-        </form>
-      </Card>
+      {messages.length === 0 && (
+        <div className="mb-6 flex flex-wrap gap-2">
+          {SUGGESTIONS.map((s) => (
+            <button
+              key={s}
+              onClick={() => ask(s)}
+              className="rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-brand-emerald hover:text-brand-emerald"
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
 
-      <div className="mb-6 flex flex-wrap gap-2">
-        {SUGGESTIONS.map((s) => (
-          <button
-            key={s}
-            onClick={() => {
-              setQuestion(s);
-              ask(s);
-            }}
-            className="rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-brand-emerald hover:text-brand-emerald"
-          >
-            {s}
-          </button>
-        ))}
+      <div className="mb-4 space-y-4">
+        {messages.map((m, i) =>
+          m.role === "user" ? (
+            <div key={i} className="flex justify-end">
+              <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-brand-emerald px-4 py-2.5 text-sm text-white">{m.text}</div>
+            </div>
+          ) : (
+            <div key={i} className="flex justify-start">
+              <Card className="max-w-[85%] rounded-bl-sm">
+                {m.queryClass && (
+                  <Badge tone="info" className="mb-2">
+                    {m.queryClass}
+                  </Badge>
+                )}
+                <p className="text-sm text-ink">{m.text}</p>
+                {m.evidence && <EvidencePanel evidence={m.evidence} />}
+              </Card>
+            </div>
+          )
+        )}
+        {loading && (
+          <div className="flex justify-start">
+            <Card className="rounded-bl-sm">
+              <p className="text-sm text-muted">Thinking...</p>
+            </Card>
+          </div>
+        )}
       </div>
 
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
 
-      {result && (
-        <Card>
-          <Badge tone="info" className="mb-3">
-            {result.query_class}
-          </Badge>
-          <p className="text-base text-ink">{result.answer}</p>
-          {result.grounded && <p className="mt-2 text-xs text-muted">✓ Grounded in your computed analytics</p>}
-        </Card>
-      )}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          ask(question);
+        }}
+        className={cn("sticky bottom-4 flex gap-3 rounded-2xl border border-line bg-card p-2 shadow-sm", "md:bottom-6")}
+      >
+        <Input
+          className="border-none focus:ring-0"
+          placeholder="How have I changed in the last 3 months?"
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+        />
+        <Button type="submit" disabled={loading || !question.trim()}>
+          Ask
+        </Button>
+      </form>
     </AppShell>
   );
 }

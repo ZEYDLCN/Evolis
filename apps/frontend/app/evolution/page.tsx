@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import AppShell from "../../components/AppShell";
 import { useRequireAuth } from "../../lib/useAuth";
@@ -8,7 +9,7 @@ import { api, fetchSvg, ApiError, DiffResult, Version } from "../../lib/api";
 import { Card } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { Input, Label } from "../../components/ui/Input";
-import { Badge } from "../../components/ui/Badge";
+import { Badge, DeltaBadge } from "../../components/ui/Badge";
 import { Tabs } from "../../components/ui/Tabs";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { PageHeader } from "../../components/ui/PageHeader";
@@ -19,11 +20,6 @@ function isoMonthsAgo(months: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-function pct(x: number | null): string {
-  if (x === null) return "—";
-  const sign = x >= 0 ? "+" : "";
-  return `${sign}${(x * 100).toFixed(0)}%`;
-}
 
 export default function EvolutionPage() {
   return (
@@ -36,7 +32,9 @@ export default function EvolutionPage() {
 function EvolutionPageInner() {
   const ready = useRequireAuth();
   const searchParams = useSearchParams();
-  const [tab, setTab] = useState(searchParams.get("tab") === "compare" ? "compare" : "current");
+  const VALID_TABS = ["current", "history", "compare", "release_notes"];
+  const tabParam = searchParams.get("tab");
+  const [tab, setTab] = useState(tabParam && VALID_TABS.includes(tabParam) ? tabParam : "current");
   const [versions, setVersions] = useState<Version[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -139,23 +137,99 @@ function CurrentVersionTab({ latest, onGenerated }: { latest: Version | undefine
   );
 }
 
+function monthLabel(iso: string): string {
+  return new Date(iso + "T00:00:00").toLocaleDateString(undefined, { month: "short", year: "numeric" });
+}
+
 function VersionHistoryTab({ versions, onGenerated }: { versions: Version[]; onGenerated: (v: Version) => void }) {
+  const [diffs, setDiffs] = useState<Record<string, DiffResult>>({});
+
+  useEffect(() => {
+    if (versions.length < 2) return;
+    Promise.all(
+      versions.slice(1).map(async (v, i) => {
+        const prev = versions[i];
+        try {
+          return [v.label, await api.diff(prev.label, v.label)] as const;
+        } catch {
+          return null;
+        }
+      })
+    ).then((results) => {
+      const map: Record<string, DiffResult> = {};
+      for (const r of results) {
+        if (r) map[r[0]] = r[1];
+      }
+      setDiffs(map);
+    });
+  }, [versions]);
+
   return (
     <div className="space-y-6">
       <GenerateVersionForm onGenerated={onGenerated} />
       {versions.length === 0 ? (
         <EmptyState title="No versions yet" description="Generate one above to start your version history." />
       ) : (
-        <div className="space-y-2">
-          {[...versions].reverse().map((v) => (
-            <Card key={v.id} className="flex items-center justify-between py-3">
-              <span className="font-mono font-semibold text-ink">YOU v{v.label}</span>
-              <span className="text-sm text-muted">
-                {v.period_start} → {v.period_end}
-              </span>
-            </Card>
-          ))}
-        </div>
+        <>
+          {versions.length >= 2 && (
+            <div className="overflow-x-auto pb-2">
+              <div className="flex min-w-max items-center">
+                {versions.map((v, i) => (
+                  <div key={v.id} className="flex items-center">
+                    {i > 0 && <div className="h-px w-12 bg-line" />}
+                    <div className="flex flex-col items-center px-1">
+                      <div className="h-2.5 w-2.5 rounded-full bg-brand-emerald" />
+                      <div className="mt-1 font-mono text-xs font-semibold text-ink">v{v.label}</div>
+                      <div className="text-[11px] text-muted">{monthLabel(v.period_start)}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-3">
+            {[...versions].reverse().map((v) => {
+              const d = diffs[v.label];
+              return (
+                <Card key={v.id}>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <div className="font-mono font-semibold text-ink">YOU v{v.label}</div>
+                      <div className="text-xs text-muted">{monthLabel(v.period_start)}</div>
+                    </div>
+                    <Link href={`/evolution?tab=compare`} className="text-sm font-semibold text-brand-emerald hover:underline">
+                      View →
+                    </Link>
+                  </div>
+
+                  {d && (
+                    <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {d.added_topics.length > 0 && (
+                        <div>
+                          <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">New</div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {d.added_topics.slice(0, 4).map((t) => (
+                              <Badge key={t} tone="positive">
+                                + {t}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {d.completion_change !== null && d.completion_change > 0 && (
+                        <div>
+                          <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">Improved</div>
+                          <Badge tone="positive">Completion +{Math.round(d.completion_change * 100)}%</Badge>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </Card>
+              );
+            })}
+          </div>
+        </>
       )}
     </div>
   );
@@ -243,11 +317,29 @@ function CompareTab({ versions }: { versions: Version[] }) {
           <DiffSection title="Emerging Interest" tone="info" items={diff.emerging_topics.map((t) => `→ ${t}`)} />
 
           <Card>
-            <div className="mb-2 text-sm font-semibold text-ink">Behavior</div>
-            <div className="space-y-1 text-sm text-ink">
-              <div>Completion Rate: {pct(diff.completion_change)}</div>
-              <div>Deep Work: {pct(diff.deep_work_change)}</div>
-              <div>Context Switching: {diff.context_switching_change ?? "—"}/day</div>
+            <div className="mb-3 text-sm font-semibold text-ink">Behavior</div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <BehaviorMetric label="Deep Work" before={diff.deep_work_before} after={diff.deep_work_after} unit="h" changePct={diff.deep_work_change} higherIsBetter />
+              <BehaviorMetric
+                label="Completion"
+                before={diff.completion_before !== null ? diff.completion_before * 100 : null}
+                after={diff.completion_after !== null ? diff.completion_after * 100 : null}
+                unit="%"
+                changePct={diff.completion_change}
+                higherIsBetter
+              />
+              <BehaviorMetric
+                label="Context Switching"
+                before={diff.context_switching_before}
+                after={diff.context_switching_after}
+                unit="/day"
+                changePct={
+                  diff.context_switching_before && diff.context_switching_change !== null
+                    ? diff.context_switching_change / diff.context_switching_before
+                    : null
+                }
+                higherIsBetter={false}
+              />
             </div>
           </Card>
 
@@ -267,6 +359,43 @@ function CompareTab({ versions }: { versions: Version[] }) {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function BehaviorMetric({
+  label,
+  before,
+  after,
+  unit,
+  changePct,
+  higherIsBetter,
+}: {
+  label: string;
+  before: number | null;
+  after: number | null;
+  unit: string;
+  changePct: number | null;
+  higherIsBetter: boolean;
+}) {
+  const isPositive = changePct === null || changePct === 0 ? null : (changePct > 0) === higherIsBetter;
+  return (
+    <div>
+      <div className="text-xs uppercase tracking-wide text-muted">{label}</div>
+      <div className="mt-1 flex items-baseline gap-2">
+        <span className="text-lg font-semibold text-ink">
+          {before !== null ? before.toFixed(1) : "—"}
+          {unit}
+        </span>
+        <span className="text-muted">→</span>
+        <span className="text-lg font-semibold text-ink">
+          {after !== null ? after.toFixed(1) : "—"}
+          {unit}
+        </span>
+      </div>
+      <div className="mt-1.5">
+        <DeltaBadge changePct={changePct} isPositive={isPositive} />
+      </div>
     </div>
   );
 }

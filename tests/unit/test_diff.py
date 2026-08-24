@@ -27,3 +27,7 @@ def test_diff_detects_added_declining_and_dormant_topics():
     assert diff.completion_change == round(0.78 - 0.62, 4)
     assert diff.deep_work_change > 0
     assert diff.context_switching_change < 0
+    assert diff.deep_work_before == 2.1
+    assert diff.deep_work_after == 3.4
+    assert diff.completion_before == 0.62
+    assert diff.completion_after == 0.78

@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from apps.api.dependencies import get_current_user
 from src.analytics.anomalies import detect_learning_time_anomalies
+from src.analytics.evolis_score import compute_evolis_score
 from src.analytics.interests import topic_interest_scores
 from src.analytics.onboarding import compute_onboarding_status
 from src.analytics.patterns import detect_project_load_vs_completion
@@ -12,6 +13,7 @@ from src.analytics.productivity import behavior_summary
 from src.analytics.skill_graph import build_skill_graph
 from src.analytics.skills import skill_scores
 from src.analytics.streaks import compute_heatmap, compute_streak
+from src.analytics.weekly_review import build_weekly_review
 from src.database.base import get_db
 from src.database.models import User
 
@@ -96,3 +98,13 @@ def get_heatmap(days: int = Query(365, ge=7, le=730), user: User = Depends(get_c
 @router.get("/onboarding")
 def get_onboarding(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict:
     return compute_onboarding_status(db, user.id).to_dict()
+
+
+@router.get("/evolis-score")
+def get_evolis_score(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict:
+    return compute_evolis_score(db, user.id).to_dict()
+
+
+@router.get("/weekly-review")
+def get_weekly_review(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict:
+    return build_weekly_review(db, user.id).to_dict()

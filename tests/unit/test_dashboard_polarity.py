@@ -1,4 +1,4 @@
-from src.analytics.dashboard import _weekly_evolution
+from src.analytics.dashboard import weekly_behavior_deltas
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from src.database.base import Base
@@ -21,6 +21,6 @@ def test_zero_change_is_neutral_not_negative():
     db.add(user)
     db.commit()
 
-    rows = _weekly_evolution(db, user.id, dt.datetime(2026, 8, 23))
+    rows = weekly_behavior_deltas(db, user.id, dt.datetime(2026, 8, 23))
     for row in rows:
         assert row["is_positive"] is None

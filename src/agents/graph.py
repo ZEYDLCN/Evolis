@@ -20,6 +20,7 @@ from langgraph.graph import END, StateGraph
 from sqlalchemy.orm import Session
 
 from src.agents.classifier import QueryClass, classify_query
+from src.agents.evidence import build_evidence
 from src.agents.planner import QueryPlan, build_plan
 from src.agents.analytics_agent import run_analysis
 from src.agents.verifier import verify_grounded
@@ -104,4 +105,5 @@ def run_ask_graph(db: Session, user_id: str, question: str) -> dict:
         "analysis": result["analysis"],
         "answer": result["answer"],
         "grounded": result.get("grounded", True),
+        "evidence": build_evidence(result["analysis"]),
     }

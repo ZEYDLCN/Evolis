@@ -228,6 +228,20 @@ def test_dashboard_summary_endpoint(client):
     assert "streak" in r.json() and "hero_headline" in r.json()
 
 
+def test_evolis_score_and_weekly_review_endpoints(client):
+    headers = _auth_headers(client)
+    client.post("/entries", json={"text": "RAG üzerine çalıştım."}, headers=headers)
+
+    r = client.get("/analytics/evolis-score", headers=headers)
+    assert r.status_code == 200
+    body = r.json()
+    assert set(body.keys()) == {"consistency", "focus", "execution", "learning"}
+
+    r = client.get("/analytics/weekly-review", headers=headers)
+    assert r.status_code == 200
+    assert "entries_count" in r.json()
+
+
 def test_google_auth_reports_not_configured_by_default(client):
     r = client.get("/auth/google/config")
     assert r.status_code == 200

@@ -73,6 +73,8 @@ export const api = {
   heatmap: (days = 365) => apiFetch<HeatmapDay[]>(`/analytics/heatmap?days=${days}`),
   onboarding: () => apiFetch<OnboardingStatus>("/analytics/onboarding"),
   dashboardSummary: () => apiFetch<DashboardSummary>("/dashboard/summary"),
+  evolisScore: () => apiFetch<EvolisScore>("/analytics/evolis-score"),
+  weeklyReview: () => apiFetch<WeeklyReview>("/analytics/weekly-review"),
 
   timeline: () => apiFetch<Record<string, string[]>>("/timeline"),
 
@@ -185,6 +187,12 @@ export interface DiffResult {
   completion_change: number | null;
   deep_work_change: number | null;
   context_switching_change: number | null;
+  completion_before: number | null;
+  completion_after: number | null;
+  deep_work_before: number | null;
+  deep_work_after: number | null;
+  context_switching_before: number | null;
+  context_switching_after: number | null;
 }
 
 export interface Anomaly {
@@ -245,7 +253,14 @@ export interface DashboardSummary {
   insight: DashboardInsight | null;
   recent_activity: DashboardActivity[];
   streak: { current: number; longest: number };
+  evolis_score: EvolisScore | null;
   onboarding_gate: boolean;
+}
+
+export interface AskEvidence {
+  entries_analyzed: number;
+  bullets: string[];
+  source_entries: string[];
 }
 
 export interface AskResult {
@@ -254,4 +269,25 @@ export interface AskResult {
   answer: string;
   grounded: boolean;
   analysis: Record<string, unknown>;
+  evidence: AskEvidence;
+}
+
+export interface EvolisScore {
+  consistency: number;
+  focus: number;
+  execution: number;
+  learning: number;
+}
+
+export interface WeeklyReview {
+  period_start: string;
+  period_end: string;
+  entries_count: number;
+  learning_hours: number;
+  projects_touched: number;
+  completion_rate: number;
+  top_focus: string | null;
+  emerging_topic: string | null;
+  biggest_improvement: { label: string; change: number } | null;
+  watch: { label: string; change: number } | null;
 }

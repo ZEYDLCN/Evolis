@@ -157,6 +157,40 @@ export default function DashboardPage() {
             </div>
           </Card>
 
+          {summary.evolis_score && (
+            <Card>
+              <div className="mb-3 text-sm font-semibold text-ink">Evolution Signals</div>
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                {(
+                  [
+                    ["Consistency", summary.evolis_score.consistency],
+                    ["Focus", summary.evolis_score.focus],
+                    ["Execution", summary.evolis_score.execution],
+                    ["Learning", summary.evolis_score.learning],
+                  ] as [string, number][]
+                ).map(([label, value]) => (
+                  <div key={label}>
+                    <div className="text-xs uppercase tracking-wide text-muted">{label}</div>
+                    <div className="mt-1 text-xl font-semibold text-ink">{value}</div>
+                    <div className="mt-1.5 h-1.5 rounded-full bg-surface">
+                      <div className="h-full rounded-full bg-brand-emerald" style={{ width: `${value}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+
+          <Card className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-semibold text-ink">Your Week in Evolis</div>
+              <p className="text-sm text-muted">A recap of entries, focus, and what to watch this week.</p>
+            </div>
+            <Link href="/weekly-review">
+              <Button variant="secondary">View →</Button>
+            </Link>
+          </Card>
+
           {summary.insight && (
             <InsightCard
               headline={summary.insight.headline}

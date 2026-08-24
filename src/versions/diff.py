@@ -26,6 +26,14 @@ class VersionDiff:
     completion_change: float | None = None
     deep_work_change: float | None = None
     context_switching_change: float | None = None
+    # Raw before/after values, for a UI that wants to show "2.2h -> 3.1h"
+    # rather than just "+41%" (section 9's Interactive Diff mockup).
+    completion_before: float | None = None
+    completion_after: float | None = None
+    deep_work_before: float | None = None
+    deep_work_after: float | None = None
+    context_switching_before: float | None = None
+    context_switching_after: float | None = None
 
     def to_dict(self) -> dict:
         return {
@@ -38,6 +46,12 @@ class VersionDiff:
             "completion_change": self.completion_change,
             "deep_work_change": self.deep_work_change,
             "context_switching_change": self.context_switching_change,
+            "completion_before": self.completion_before,
+            "completion_after": self.completion_after,
+            "deep_work_before": self.deep_work_before,
+            "deep_work_after": self.deep_work_after,
+            "context_switching_before": self.context_switching_before,
+            "context_switching_after": self.context_switching_after,
         }
 
 
@@ -81,12 +95,18 @@ def diff_versions(base_metrics: dict, target_metrics: dict) -> VersionDiff:
         }
 
     if "completion_rate" in base_metrics and "completion_rate" in target_metrics:
+        diff.completion_before = base_metrics["completion_rate"]
+        diff.completion_after = target_metrics["completion_rate"]
         diff.completion_change = round(target_metrics["completion_rate"] - base_metrics["completion_rate"], 4)
     if "deep_work_hours_per_day" in base_metrics and "deep_work_hours_per_day" in target_metrics:
+        diff.deep_work_before = base_metrics["deep_work_hours_per_day"]
+        diff.deep_work_after = target_metrics["deep_work_hours_per_day"]
         diff.deep_work_change = round(
             _relative_change(base_metrics["deep_work_hours_per_day"], target_metrics["deep_work_hours_per_day"]), 4
         )
     if "context_switching_per_day" in base_metrics and "context_switching_per_day" in target_metrics:
+        diff.context_switching_before = base_metrics["context_switching_per_day"]
+        diff.context_switching_after = target_metrics["context_switching_per_day"]
         diff.context_switching_change = round(
             target_metrics["context_switching_per_day"] - base_metrics["context_switching_per_day"], 4
         )

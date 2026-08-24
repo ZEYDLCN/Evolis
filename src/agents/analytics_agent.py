@@ -7,11 +7,18 @@ from src.agents.planner import QueryPlan
 from src.analytics.interests import topic_interest_scores
 from src.analytics.productivity import behavior_summary
 from src.analytics.skills import skill_scores
+from src.database.models import Entry
 from src.rag.retriever import RetrievedEntry, hybrid_search
 
 
 def run_analysis(db: Session, user_id: str, plan: QueryPlan, question: str) -> dict:
     result: dict = {"query_class": plan.query_class}
+
+    # Always tracked, regardless of path — section 13's "Based on N entries"
+    # grounding line needs a real count, not an estimate.
+    result["entries_analyzed"] = (
+        db.query(Entry).filter(Entry.user_id == user_id, Entry.entry_date >= plan.start, Entry.entry_date < plan.end).count()
+    )
 
     if plan.use_sql:
         result["interests"] = topic_interest_scores(db, user_id, plan.start, plan.end)

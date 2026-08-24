@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from sqlalchemy.orm import Session
 
 from src.analytics.anomalies import detect_learning_time_anomalies
+from src.analytics.evolis_score import compute_evolis_score
 from src.analytics.interests import topic_interest_scores
 from src.analytics.patterns import detect_project_load_vs_completion
 from src.analytics.productivity import behavior_summary
@@ -49,6 +50,7 @@ class DashboardSummary:
     insight: dict | None
     recent_activity: list[dict]
     streak: dict
+    evolis_score: dict | None
     onboarding_gate: bool  # true when there's too little data for the dashboard to say much yet
 
     def to_dict(self) -> dict:
@@ -63,6 +65,7 @@ class DashboardSummary:
             "insight": self.insight,
             "recent_activity": self.recent_activity,
             "streak": self.streak,
+            "evolis_score": self.evolis_score,
             "onboarding_gate": self.onboarding_gate,
         }
 
@@ -124,7 +127,7 @@ def _focus_shift(db: Session, user_id: str, now: dt.datetime) -> tuple[list[dict
     return bars, note
 
 
-def _weekly_evolution(db: Session, user_id: str, now: dt.datetime) -> list[dict]:
+def weekly_behavior_deltas(db: Session, user_id: str, now: dt.datetime) -> list[dict]:
     this_start, this_end = period_bounds("weekly", now.date())
     last_start, last_end = period_bounds("weekly", (now - dt.timedelta(days=7)).date())
 
@@ -235,10 +238,11 @@ def build_dashboard_summary(db: Session, user_id: str, display_name: str | None,
 
     streak_info = compute_streak(db, user_id, today=today)
     focus_bars, focus_note = _focus_shift(db, user_id, now)
-    weekly = _weekly_evolution(db, user_id, now)
+    weekly = weekly_behavior_deltas(db, user_id, now)
     version_card = _current_version_card(db, user_id)
     insight = None if onboarding_gate else _build_insight(db, user_id, focus_bars, now)
     recent = _recent_activity(db, user_id, today)
+    evolis_score = None if onboarding_gate else compute_evolis_score(db, user_id, now).to_dict()
 
     hero_stats = []
     deep_work_row = next((w for w in weekly if w["key"] == "deep_work_hours_per_day"), None)
@@ -271,5 +275,6 @@ def build_dashboard_summary(db: Session, user_id: str, display_name: str | None,
         insight=insight,
         recent_activity=recent,
         streak={"current": streak_info.current_streak, "longest": streak_info.longest_streak},
+        evolis_score=evolis_score,
         onboarding_gate=onboarding_gate,
     )
