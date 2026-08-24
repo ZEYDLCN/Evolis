@@ -56,8 +56,9 @@ Open `http://localhost:8000/docs` for the interactive API.
 The app runs with zero external services out of the box: SQLite for storage,
 a regex-based extractor, and a hashing-based embedding — see
 [docs/ARCHITECTURE.md § Degradation strategy](docs/ARCHITECTURE.md#5-degradation-strategy)
-for what upgrades when you add `ANTHROPIC_API_KEY`, Postgres+pgvector, or the
-optional ML dependencies.
+for what upgrades when you add `GROQ_API_KEY` or `ANTHROPIC_API_KEY`
+(see `src/llm/provider.py`), Postgres+pgvector, or the optional ML
+dependencies.
 
 ### Full stack (Postgres + pgvector, Redis, worker, frontend)
 

@@ -8,8 +8,9 @@ are computed deterministically from that structured output — never guessed
 by a model.
 
 Two backends:
-  - AnthropicExtractor: calls the Claude API with a JSON-schema-constrained
-    prompt. Used when ANTHROPIC_API_KEY is set.
+  - LLMExtractor: calls whichever provider src.llm.provider picks (Groq or
+    Anthropic) with a JSON-schema-constrained prompt. Used when
+    GROQ_API_KEY or ANTHROPIC_API_KEY is set.
   - HeuristicExtractor: a zero-dependency regex/keyword fallback so the
     pipeline (and tests) run offline and for free.
 
@@ -19,10 +20,10 @@ get_extractor() picks whichever is available; callers should depend on the
 from __future__ import annotations
 
 import json
-import os
 import re
 from typing import Protocol
 
+from src.llm.provider import active_provider, complete
 from src.monitoring.metrics import llm_calls_total
 
 from .schemas import ExtractedActivity, ExtractedEntry
@@ -51,22 +52,10 @@ class Extractor(Protocol):
     def extract(self, text: str) -> ExtractedEntry: ...
 
 
-class AnthropicExtractor:
-    def __init__(self, model: str = "claude-sonnet-5") -> None:
-        import anthropic  # local import: optional dependency
-
-        self._client = anthropic.Anthropic()
-        self._model = model
-
+class LLMExtractor:
     def extract(self, text: str) -> ExtractedEntry:
         try:
-            response = self._client.messages.create(
-                model=self._model,
-                max_tokens=1024,
-                system=SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": text}],
-            )
-            raw = "".join(block.text for block in response.content if block.type == "text")
+            raw = complete(SYSTEM_PROMPT, text, max_tokens=1024)
             data = json.loads(_strip_code_fence(raw))
             result = ExtractedEntry.model_validate(data)
         except Exception:
@@ -104,7 +93,7 @@ class HeuristicExtractor:
 
     Deliberately simple — this exists so the pipeline works with zero API
     keys and so unit tests don't need network access. Swap in
-    AnthropicExtractor for real accuracy.
+    LLMExtractor for real accuracy.
     """
 
     def extract(self, text: str) -> ExtractedEntry:
@@ -177,9 +166,6 @@ def _strip_code_fence(raw: str) -> str:
 
 
 def get_extractor() -> Extractor:
-    if os.getenv("ANTHROPIC_API_KEY"):
-        try:
-            return AnthropicExtractor()
-        except Exception:
-            pass
+    if active_provider():
+        return LLMExtractor()
     return HeuristicExtractor()

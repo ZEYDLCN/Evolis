@@ -11,10 +11,9 @@ the answer, not about the graph's control flow.
 """
 from __future__ import annotations
 
-import os
-
 from sqlalchemy.orm import Session
 
+from src.llm.provider import active_provider, complete
 from src.monitoring.metrics import llm_calls_total
 
 EXPLAIN_SYSTEM_PROMPT = """You are Evolis's analyst voice. You are given a
@@ -35,11 +34,8 @@ def ask(db: Session, user_id: str, question: str, lang: str = "en") -> dict:
 
 
 def _explain(question: str, analysis: dict, lang: str = "en") -> str:
-    if os.getenv("ANTHROPIC_API_KEY"):
+    if active_provider():
         try:
-            import anthropic
-
-            client = anthropic.Anthropic()
             # The prompt already says "same language as the question" —
             # that's usually right (a Turkish entry gets a Turkish
             # answer). This only steers the rare case where the question
@@ -47,14 +43,9 @@ def _explain(question: str, analysis: dict, lang: str = "en") -> str:
             system = EXPLAIN_SYSTEM_PROMPT + (
                 f"\n\nIf the question's language is ambiguous, default to {'Turkish' if lang == 'tr' else 'English'}."
             )
-            response = client.messages.create(
-                model="claude-sonnet-5",
-                max_tokens=512,
-                system=system,
-                messages=[{"role": "user", "content": f"Question: {question}\n\nData: {analysis}"}],
-            )
+            text = complete(system, f"Question: {question}\n\nData: {analysis}", max_tokens=512)
             llm_calls_total.labels(purpose="ask_explain", outcome="success").inc()
-            return "".join(b.text for b in response.content if b.type == "text")
+            return text
         except Exception:
             llm_calls_total.labels(purpose="ask_explain", outcome="error").inc()
 

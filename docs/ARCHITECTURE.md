@@ -117,17 +117,24 @@ query once entry counts get large is a Phase 2 item.
 ## 5. Degradation strategy
 
 Every AI/ML dependency is optional and has a deterministic fallback, so the
-whole pipeline runs offline with `pip install -r requirements.txt` (no
-Anthropic key, no sentence-transformers download, no HDBSCAN):
+whole pipeline runs offline with `pip install -r requirements.txt` (no LLM
+key, no sentence-transformers download, no HDBSCAN):
 
 | Capability | Real backend | Fallback |
 |---|---|---|
-| Structured extraction | Claude API (`AnthropicExtractor`) | Regex/keyword heuristic (`HeuristicExtractor`) |
+| Structured extraction | Groq or Claude API (`LLMExtractor`) | Regex/keyword heuristic (`HeuristicExtractor`) |
 | Embeddings | multilingual-e5 via sentence-transformers | Deterministic hashing embedding |
 | Clustering | HDBSCAN | K-Means, then no-op if scikit-learn is missing |
-| Cluster naming | Claude API | Most frequent topic strings in the cluster (`" & "`-joined) |
+| Cluster naming | Groq or Claude API | Most frequent topic strings in the cluster (`" & "`-joined) |
 | Anomaly detection | Isolation Forest | Rolling mean + z-score (always available) |
-| Ask Evolis explanation | Claude API | Template built from the analysis payload |
+| Ask Evolis explanation | Groq or Claude API | Template built from the analysis payload |
+
+The LLM row of that table has its own two-way fallback, independent of the
+Groq/Claude choice: `src/llm/provider.py` routes to whichever of
+`GROQ_API_KEY` / `ANTHROPIC_API_KEY` is set (Groq wins if both are), and
+every call site already catches its own exceptions and falls back to its
+deterministic heuristic on any failure — a bad/missing key degrades
+gracefully rather than 500ing.
 
 This is a deliberate trade for an early-stage repo: correctness of the
 *pipeline shape* now, swap in real models as they're wired up, without a

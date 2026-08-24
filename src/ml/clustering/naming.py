@@ -8,8 +8,7 @@ offline.
 """
 from __future__ import annotations
 
-import os
-
+from src.llm.provider import active_provider, complete
 from src.monitoring.metrics import llm_calls_total
 
 SYSTEM_PROMPT = """You name a cluster of semantically related personal
@@ -19,18 +18,9 @@ label only, no punctuation at the end, no quotes."""
 
 
 def name_cluster(representative_texts: list[str], fallback_topics: list[str]) -> str:
-    if os.getenv("ANTHROPIC_API_KEY"):
+    if active_provider():
         try:
-            import anthropic
-
-            client = anthropic.Anthropic()
-            response = client.messages.create(
-                model="claude-sonnet-5",
-                max_tokens=32,
-                system=SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": "\n".join(representative_texts[:5])}],
-            )
-            label = "".join(b.text for b in response.content if b.type == "text").strip()
+            label = complete(SYSTEM_PROMPT, "\n".join(representative_texts[:5]), max_tokens=32).strip()
             if label:
                 llm_calls_total.labels(purpose="cluster_naming", outcome="success").inc()
                 return label
