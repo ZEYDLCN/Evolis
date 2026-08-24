@@ -14,7 +14,13 @@
   // etc. all work from there without this container running its own
   // nested Docker.
   "features": {
-    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+    // moby:false -- the feature's default "moby" packages aren't published
+    // for Debian trixie yet (python:3.12-slim's current base), which fails
+    // the container build outright. false makes it install the official
+    // Docker CE CLI packages instead, which are.
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+      "moby": false
+    }
   },
 
   "forwardPorts": [3000, 8000, 5432, 6379],
