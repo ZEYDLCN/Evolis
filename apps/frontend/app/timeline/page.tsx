@@ -1,10 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import NavBar from "../../components/NavBar";
+import AppShell from "../../components/AppShell";
 import { useRequireAuth } from "../../lib/useAuth";
 import { api } from "../../lib/api";
-import { page, card, mutedText, pill } from "../../lib/styles";
+import { Card } from "../../components/ui/Card";
+import { Badge } from "../../components/ui/Badge";
+import { PageHeader } from "../../components/ui/PageHeader";
+import { EmptyState } from "../../components/ui/EmptyState";
+import { CardSkeleton } from "../../components/ui/Skeleton";
 
 export default function TimelinePage() {
   const ready = useRequireAuth();
@@ -24,31 +28,30 @@ export default function TimelinePage() {
   const months = Object.keys(timeline).sort();
 
   return (
-    <>
-      <NavBar />
-      <main style={page}>
-        <h1>Timeline</h1>
-        <p style={mutedText}>Topics you've touched, grouped by month.</p>
+    <AppShell>
+      <PageHeader title="Timeline" description="Topics you've touched, grouped by month." />
 
-        {loading ? (
-          <p style={mutedText}>Loading...</p>
-        ) : months.length === 0 ? (
-          <p style={mutedText}>No entries yet — log a few days on the Today page first.</p>
-        ) : (
-          months.map((month) => (
-            <div key={month} style={card}>
-              <strong>{month}</strong>
-              <div style={{ marginTop: 10 }}>
+      {loading ? (
+        <div className="space-y-3">
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+      ) : months.length === 0 ? (
+        <EmptyState icon="🗓️" title="No entries yet" description="Log a few days on the Today page first." />
+      ) : (
+        <div className="space-y-3">
+          {months.map((month) => (
+            <Card key={month}>
+              <div className="mb-2 font-semibold text-ink">{month}</div>
+              <div className="flex flex-wrap gap-1.5">
                 {timeline[month].map((topic) => (
-                  <span key={topic} style={pill}>
-                    {topic}
-                  </span>
+                  <Badge key={topic}>{topic}</Badge>
                 ))}
               </div>
-            </div>
-          ))
-        )}
-      </main>
-    </>
+            </Card>
+          ))}
+        </div>
+      )}
+    </AppShell>
   );
 }

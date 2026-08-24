@@ -3,9 +3,12 @@
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, setToken, ApiError } from "../../lib/api";
-import { page, card, input, button, buttonSecondary, brand, errorText, mutedText } from "../../lib/styles";
+import { cn } from "../../lib/cn";
 import EvolisLogo from "../../components/EvolisLogo";
 import GoogleSignInButton from "../../components/GoogleSignInButton";
+import { Card } from "../../components/ui/Card";
+import { Button } from "../../components/ui/Button";
+import { Input, Label } from "../../components/ui/Input";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,7 +25,7 @@ export default function LoginPage() {
     try {
       const result = mode === "login" ? await api.login(email, password) : await api.register(email, password);
       setToken(result.access_token);
-      router.push("/today");
+      router.push("/dashboard");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong");
     } finally {
@@ -30,44 +33,53 @@ export default function LoginPage() {
     }
   }
 
-  const handleGoogleSuccess = useCallback(() => router.push("/today"), [router]);
+  const handleGoogleSuccess = useCallback(() => router.push("/dashboard"), [router]);
   const handleGoogleError = useCallback((message: string) => setError(message), []);
 
   return (
-    <main style={{ ...page, maxWidth: 420, paddingTop: "4rem" }}>
+    <main className="mx-auto min-h-screen max-w-md bg-surface px-4 pt-16">
       <EvolisLogo size={44} showTagline />
 
-      <form onSubmit={submit} style={{ ...card, marginTop: "2rem" }}>
-        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-          <button type="button" onClick={() => setMode("login")} style={mode === "login" ? button : buttonSecondary}>
+      <Card className="mt-8">
+        <div className="mb-4 flex gap-2">
+          <button
+            type="button"
+            onClick={() => setMode("login")}
+            className={cn(
+              "flex-1 rounded-xl py-2.5 text-sm font-semibold transition-colors",
+              mode === "login" ? "bg-brand-emerald text-white" : "bg-surface text-ink"
+            )}
+          >
             Log in
           </button>
-          <button type="button" onClick={() => setMode("register")} style={mode === "register" ? button : buttonSecondary}>
+          <button
+            type="button"
+            onClick={() => setMode("register")}
+            className={cn(
+              "flex-1 rounded-xl py-2.5 text-sm font-semibold transition-colors",
+              mode === "register" ? "bg-brand-emerald text-white" : "bg-surface text-ink"
+            )}
+          >
             Register
           </button>
         </div>
 
-        <label style={{ fontSize: 13, color: brand.mutedGreen }}>Email</label>
-        <input style={{ ...input, marginBottom: 12, marginTop: 4 }} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+        <form onSubmit={submit}>
+          <Label>Email</Label>
+          <Input className="mb-3" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
 
-        <label style={{ fontSize: 13, color: brand.mutedGreen }}>Password</label>
-        <input
-          style={{ ...input, marginBottom: 16, marginTop: 4 }}
-          type="password"
-          required
-          minLength={6}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+          <Label>Password</Label>
+          <Input className="mb-4" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
 
-        <button type="submit" style={{ ...button, width: "100%" }} disabled={loading}>
-          {loading ? "..." : mode === "login" ? "Log in" : "Create account"}
-        </button>
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "..." : mode === "login" ? "Log in" : "Create account"}
+          </Button>
 
-        {error && <p style={errorText}>{error}</p>}
+          {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+        </form>
 
         <GoogleSignInButton onSuccess={handleGoogleSuccess} onError={handleGoogleError} />
-      </form>
+      </Card>
     </main>
   );
 }

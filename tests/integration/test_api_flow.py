@@ -214,6 +214,20 @@ def test_streak_and_heatmap_and_onboarding_endpoints(client):
     assert first_step["done"] is True
 
 
+def test_dashboard_summary_endpoint(client):
+    headers = _auth_headers(client)
+
+    r = client.get("/dashboard/summary", headers=headers)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["onboarding_gate"] is True
+
+    client.post("/entries", json={"text": "RAG üzerine çalıştım."}, headers=headers)
+    r = client.get("/dashboard/summary", headers=headers)
+    assert r.status_code == 200
+    assert "streak" in r.json() and "hero_headline" in r.json()
+
+
 def test_google_auth_reports_not_configured_by_default(client):
     r = client.get("/auth/google/config")
     assert r.status_code == 200

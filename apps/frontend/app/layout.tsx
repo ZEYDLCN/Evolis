@@ -1,4 +1,7 @@
-import { brand } from "../lib/styles";
+import { Inter } from "next/font/google";
+import "./globals.css";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata = {
   title: "Evolis — Personal Evolution Intelligence",
@@ -7,10 +10,8 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body style={{ fontFamily: "system-ui, sans-serif", margin: 0, background: brand.surfaceTint, color: brand.deepForest }}>
-        {children}
-      </body>
+    <html lang="en" className={inter.variable}>
+      <body className="m-0 font-sans">{children}</body>
     </html>
   );
 }

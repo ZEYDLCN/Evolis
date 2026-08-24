@@ -1,10 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import NavBar from "../../components/NavBar";
+import AppShell from "../../components/AppShell";
 import { useRequireAuth } from "../../lib/useAuth";
 import { api, Project } from "../../lib/api";
-import { page, card, input, button, mutedText } from "../../lib/styles";
+import { Card } from "../../components/ui/Card";
+import { Button } from "../../components/ui/Button";
+import { Input } from "../../components/ui/Input";
+import { PageHeader } from "../../components/ui/PageHeader";
+import { EmptyState } from "../../components/ui/EmptyState";
 
 export default function ProjectsPage() {
   const ready = useRequireAuth();
@@ -42,33 +46,31 @@ export default function ProjectsPage() {
   if (!ready) return null;
 
   return (
-    <>
-      <NavBar />
-      <main style={page}>
-        <h1>Projects</h1>
-        <p style={mutedText}>Projects are auto-linked when an entry mentions them, or add one directly.</p>
+    <AppShell>
+      <PageHeader title="Projects" description="Projects are auto-linked when an entry mentions them, or add one directly." />
 
-        <form onSubmit={submit} style={{ ...card, display: "flex", gap: 12 }}>
-          <input style={input} placeholder="Project name" value={name} onChange={(e) => setName(e.target.value)} />
-          <button type="submit" style={button} disabled={submitting || !name.trim()}>
+      <Card className="mb-6">
+        <form onSubmit={submit} className="flex gap-3">
+          <Input placeholder="Project name" value={name} onChange={(e) => setName(e.target.value)} />
+          <Button type="submit" disabled={submitting || !name.trim()}>
             Add
-          </button>
+          </Button>
         </form>
+      </Card>
 
-        {loading ? (
-          <p style={mutedText}>Loading...</p>
-        ) : projects.length === 0 ? (
-          <p style={mutedText}>No projects yet.</p>
-        ) : (
-          projects.map((p) => (
-            <div key={p.id} style={card}>
-              <strong>{p.name}</strong>
-              {p.description && <p style={mutedText}>{p.description}</p>}
-              {p.technologies && p.technologies.length > 0 && <p style={mutedText}>{p.technologies.join(", ")}</p>}
-            </div>
-          ))
-        )}
-      </main>
-    </>
+      {loading ? null : projects.length === 0 ? (
+        <EmptyState icon="📁" title="No projects yet" />
+      ) : (
+        <div className="space-y-3">
+          {projects.map((p) => (
+            <Card key={p.id}>
+              <div className="font-semibold text-ink">{p.name}</div>
+              {p.description && <p className="mt-1 text-sm text-muted">{p.description}</p>}
+              {p.technologies && p.technologies.length > 0 && <p className="mt-1 text-sm text-muted">{p.technologies.join(", ")}</p>}
+            </Card>
+          ))}
+        </div>
+      )}
+    </AppShell>
   );
 }

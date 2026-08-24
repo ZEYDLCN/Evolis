@@ -131,6 +131,7 @@ POST /entries, GET /entries
 POST /projects, GET /projects, GET /projects/{id}/dashboard
 POST /tasks, GET /tasks, POST /tasks/{id}/complete
 GET  /timeline
+GET  /dashboard/summary
 GET  /analytics/interests, /analytics/skills, /analytics/behavior,
      /analytics/skill-graph, /analytics/anomalies, /analytics/patterns,
      /analytics/streak, /analytics/heatmap, /analytics/onboarding
@@ -270,6 +271,59 @@ Done since the initial MVP:
     snapshot has something to say, 2 versions is when Diff has something to
     compare) — not made-up busywork. `GET /analytics/onboarding`; the
     frontend hides the whole card once every step is done.
+
+## 8a. Product & Feature Improvement Proposal — P0 items (implemented)
+
+A follow-up product review judged the backend/AI layer strong but the
+frontend a collection of separately-working screens rather than a product
+that makes someone want to open it again. Its P0s:
+
+- ~~Modern Dashboard~~ — `src/analytics/dashboard.py` + `GET
+  /dashboard/summary`: one aggregate call (not ~8 separate requests) backing
+  the new `/dashboard` Overview screen. Every line is computed, never an
+  LLM guess: the hero headline and stat bullets, a Current Version card
+  (with strongest-growth-since-last-version via the existing diff engine),
+  a 90-day Focus Shift bar chart with a "grown +X% since" note, This-Week-
+  vs-Last-Week deltas, a single ranked Evolis Insight (anomaly → growth
+  streak → correlation pattern → top interest, in that priority order), and
+  a Recent Activity timeline. `_consecutive_growth_weeks` walks weekly
+  interest scores backward to find the "grown for N consecutive weeks"
+  streak the proposal's example insight describes.
+- ~~Real design system~~ — Tailwind CSS (`tailwind.config.ts` carries the
+  proposal's exact palette: `surface #F8FAF9`, `card #FFFFFF`,
+  `ink #102019`, `muted #6B7D73`, `line #E4ECE7`, plus the brand greens as
+  accents, not wallpaper) and a `components/ui/` primitive set — Button,
+  Card, Badge (+ a polarity-aware `DeltaBadge`), Input/Textarea/Label,
+  Skeleton, EmptyState, PageHeader, MetricCard, InsightCard, Progress,
+  Tabs. Chose "Tailwind + custom components" over shadcn/ui (the proposal's
+  own stated alternative) to avoid pulling in Radix's dependency surface
+  for a component set this small. Deferred: Dialog, Dropdown, Tooltip,
+  Toast, ConfirmDialog, ChartCard — no current screen needs them yet: adding
+  one now would be a primitive nobody imports, not a design decision.
+- ~~Navigation redesign~~ — `components/Sidebar.tsx` (desktop, fixed left)
+  and `components/BottomNav.tsx` (mobile, 5 items: Home, Today, Evolution,
+  Ask, Profile), composed by `components/AppShell.tsx` on every
+  authenticated page, replacing the old top `NavBar`. Diff, Version
+  History, and Release Notes — previously three separate screens — are now
+  tabs on one `/evolution` page (Current Version, Version History, Compare
+  Versions, Release Notes), matching the proposal's "Evolution" grouping.
+- ~~Entry capture redesign~~ — Today's composer grew prompt-suggestion
+  chips ("What did you learn?", "What did you build?", ...) and the
+  post-save reward moved from a plain list refresh to an explicit "Entry
+  analyzed ✓" card (still backed by the existing `EntryInsight`: streak,
+  recurring topics, new topics — no new backend surface needed, this was a
+  presentation change).
+
+A real bug came out of building the dashboard's polarity-aware badges:
+`(change >= 0) == higher_is_better` colored a *flat* week (0% change) as a
+regression for any lower-is-better metric (context switching), since
+`0 >= 0` is `True`. Fixed to treat exactly zero change as neutral —
+covered by `tests/unit/test_dashboard_polarity.py`.
+
+Deferred from this pass, not forgotten: a Profile/Settings split (Profile
+currently only holds privacy actions — export/delete — with nothing else
+to split out yet), dark mode (the token set is ready for it, no toggle
+wired up), and loading-skeleton coverage beyond Overview/Timeline/Insights.
 
 Still open:
 - Mobile app, calendar import, git integration — each needs a real

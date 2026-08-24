@@ -1,14 +1,12 @@
 import { HeatmapDay } from "../lib/api";
-import { brand } from "../lib/styles";
 
 const CELL = 11;
 const GAP = 3;
 
-function levelColor(count: number): string {
-  if (count === 0) return brand.borderTint;
-  if (count === 1) return brand.lime;
-  if (count === 2) return brand.midGreen;
-  return brand.emerald;
+const LEVEL_CLASS = ["bg-line", "bg-brand-lime", "bg-brand-mid", "bg-brand-emerald"];
+
+function levelClass(count: number): string {
+  return LEVEL_CLASS[Math.min(count, LEVEL_CLASS.length - 1)];
 }
 
 /** GitHub-style contribution grid: one column per week, Sun-Sat rows. */
@@ -25,16 +23,17 @@ export default function Heatmap({ days }: { days: HeatmapDay[] }) {
   }
 
   return (
-    <div style={{ overflowX: "auto", paddingBottom: 4 }}>
-      <div style={{ display: "flex", gap: GAP }}>
+    <div className="overflow-x-auto pb-1">
+      <div className="flex" style={{ gap: GAP }}>
         {weeks.map((week, wi) => (
-          <div key={wi} style={{ display: "flex", flexDirection: "column", gap: GAP }}>
+          <div key={wi} className="flex flex-col" style={{ gap: GAP }}>
             {week.map((day, di) =>
               day ? (
                 <div
                   key={di}
                   title={`${day.date}: ${day.count} entr${day.count === 1 ? "y" : "ies"}`}
-                  style={{ width: CELL, height: CELL, borderRadius: 2, background: levelColor(day.count) }}
+                  className={`rounded-sm ${levelClass(day.count)}`}
+                  style={{ width: CELL, height: CELL }}
                 />
               ) : (
                 <div key={di} style={{ width: CELL, height: CELL }} />

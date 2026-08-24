@@ -72,6 +72,7 @@ export const api = {
   streak: () => apiFetch<Streak>("/analytics/streak"),
   heatmap: (days = 365) => apiFetch<HeatmapDay[]>(`/analytics/heatmap?days=${days}`),
   onboarding: () => apiFetch<OnboardingStatus>("/analytics/onboarding"),
+  dashboardSummary: () => apiFetch<DashboardSummary>("/dashboard/summary"),
 
   timeline: () => apiFetch<Record<string, string[]>>("/timeline"),
 
@@ -198,6 +199,53 @@ export interface Pattern {
   correlation: number;
   weeks_observed: number;
   description: string;
+}
+
+export interface DashboardVersionCard {
+  label: string;
+  period_start: string;
+  period_end: string;
+  primary_focus: string | null;
+  strongest_growth: { topic: string; change: number } | null;
+  completion_rate: number | null;
+  deep_work_hours_per_day: number | null;
+  has_previous_version: boolean;
+  previous_label: string | null;
+}
+
+export interface DashboardWeeklyRow {
+  key: string;
+  label: string;
+  before: number;
+  after: number;
+  change: number | null;
+  is_positive: boolean | null;
+}
+
+export interface DashboardInsight {
+  type: string;
+  headline: string;
+  detail: string | null;
+}
+
+export interface DashboardActivity {
+  when: string;
+  date: string;
+  summary: string;
+}
+
+export interface DashboardSummary {
+  greeting_name: string | null;
+  hero_headline: string;
+  hero_stats: string[];
+  current_version: DashboardVersionCard | null;
+  focus_shift: { topic: string; score: number }[];
+  focus_shift_note: string | null;
+  weekly_evolution: DashboardWeeklyRow[];
+  insight: DashboardInsight | null;
+  recent_activity: DashboardActivity[];
+  streak: { current: number; longest: number };
+  onboarding_gate: boolean;
 }
 
 export interface AskResult {

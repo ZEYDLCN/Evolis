@@ -1,42 +1,33 @@
 import { OnboardingStatus } from "../lib/api";
-import { brand, card, mutedText } from "../lib/styles";
+import { Card } from "./ui/Card";
+import { cn } from "../lib/cn";
 
 export default function OnboardingChecklist({ status }: { status: OnboardingStatus }) {
   if (status.all_done) return null;
 
   return (
-    <div style={card}>
-      <strong>Getting started</strong>
-      <div style={{ marginTop: 12 }}>
+    <Card>
+      <div className="text-sm font-semibold text-ink">Getting started</div>
+      <div className="mt-3 space-y-1">
         {status.steps.map((step) => (
-          <div key={step.key} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0" }}>
+          <div key={step.key} className="flex items-center gap-2.5 py-1.5">
             <span
-              style={{
-                width: 18,
-                height: 18,
-                borderRadius: 999,
-                flexShrink: 0,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 11,
-                color: "#fff",
-                background: step.done ? brand.emerald : brand.borderTint,
-              }}
+              className={cn(
+                "flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full text-[11px] text-white",
+                step.done ? "bg-brand-emerald" : "bg-line"
+              )}
             >
               {step.done ? "✓" : ""}
             </span>
-            <span style={{ flex: 1, textDecoration: step.done ? "line-through" : "none", color: step.done ? brand.mutedGreen : brand.deepForest }}>
-              {step.label}
-            </span>
+            <span className={cn("flex-1 text-sm", step.done ? "text-muted line-through" : "text-ink")}>{step.label}</span>
             {!step.done && step.target > 1 && (
-              <span style={mutedText}>
+              <span className="text-xs text-muted">
                 {step.progress}/{step.target}
               </span>
             )}
           </div>
         ))}
       </div>
-    </div>
+    </Card>
   );
 }

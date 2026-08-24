@@ -130,12 +130,19 @@ npm install
 npm run dev   # http://localhost:3000, expects the API at NEXT_PUBLIC_API_URL (default localhost:8000)
 ```
 
-Screens: Login/Register, Today (daily check-in), Timeline, Diff (+ Release
-Notes and a downloadable share card), Profile (version generation, data
-export/account deletion), Projects, Insights (interests/skills/skill graph/
-behavior/anomalies/patterns), Ask Evolis. Auth token lives in
-`localStorage`; no state library — plain `fetch` calls through
-`apps/frontend/lib/api.ts`.
+Real design system (Tailwind + a `components/ui/` primitive set — see
+`docs/ARCHITECTURE.md § 8a`), a fixed sidebar on desktop / bottom tab bar
+on mobile (`AppShell`), and one aggregate `GET /dashboard/summary` behind
+the Overview screen instead of a page firing ~8 requests.
+
+Screens: Login/Register, **Overview** (dashboard: hero, current version,
+90-day focus shift, weekly deltas, one ranked insight, recent activity),
+Today (daily check-in with prompt-suggestion chips + an instant post-save
+insight card), Timeline, **Evolution** (Current Version / Version History /
+Compare / Release Notes as tabs on one page), Profile (data export/account
+deletion), Projects, Insights (interests/skills/skill graph/behavior/
+anomalies/patterns), Ask Evolis. Auth token lives in `localStorage`; no
+state library — plain `fetch` calls through `apps/frontend/lib/api.ts`.
 
 **Sign in with Google** is optional and off until you set it up: create an
 OAuth 2.0 Client ID ("Web application") at
