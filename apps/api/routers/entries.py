@@ -1,6 +1,6 @@
 import datetime as dt
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
@@ -8,7 +8,7 @@ from apps.api.dependencies import get_current_user
 from src.analytics.entry_insight import build_entry_insight
 from src.database.base import get_db
 from src.database.models import User
-from src.services.entry_service import create_entry
+from src.services.entry_service import correct_entry_extraction, create_entry
 
 router = APIRouter(prefix="/entries", tags=["entries"])
 
@@ -16,6 +16,19 @@ router = APIRouter(prefix="/entries", tags=["entries"])
 class CreateEntryRequest(BaseModel):
     text: str
     entry_date: dt.date | None = None
+
+
+class ActivityCorrection(BaseModel):
+    type: str | None = None
+    topic: str | None = None
+    duration_minutes: int | None = None
+    project: str | None = None
+
+
+class CorrectEntryRequest(BaseModel):
+    topics: list[str] | None = None
+    completion_status: str | None = None
+    activities: list[ActivityCorrection] | None = None
 
 
 class EntryResponse(BaseModel):
@@ -42,6 +55,26 @@ def add_entry(payload: CreateEntryRequest, user: User = Depends(get_current_user
         blockers=entry.blockers,
         extraction=entry.extraction_raw,
         insight=insight.to_dict(),
+    )
+
+
+@router.patch("/{entry_id}", response_model=EntryResponse)
+def correct_entry(
+    entry_id: str, payload: CorrectEntryRequest, user: User = Depends(get_current_user), db: Session = Depends(get_db)
+) -> EntryResponse:
+    corrected = payload.model_dump(exclude_unset=True)
+    if "activities" in corrected:
+        corrected["activities"] = [a for a in corrected["activities"]]
+    entry = correct_entry_extraction(db, user.id, entry_id, corrected)
+    if not entry:
+        raise HTTPException(404, "Entry not found")
+    return EntryResponse(
+        id=entry.id,
+        raw_text=entry.raw_text,
+        entry_date=entry.entry_date,
+        completion_status=entry.completion_status,
+        blockers=entry.blockers,
+        extraction=entry.extraction_raw,
     )
 
 

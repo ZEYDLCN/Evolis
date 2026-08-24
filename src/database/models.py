@@ -149,7 +149,17 @@ class Goal(Base):
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
     title: Mapped[str] = mapped_column(String(200))
     status: Mapped[str] = mapped_column(String(20), default="active")
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # metric_key/target_value: an optional link to a real computed metric
+    # (e.g. "completion_rate" / 0.8, "deep_work_hours_per_day" / 3.0) so
+    # progress can be measured against src/analytics data rather than a
+    # manually-ticked checkbox. Goals without a metric are just to-dos.
+    metric_key: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    target_value: Mapped[float | None] = mapped_column(Float, nullable=True)
+    target_date: Mapped[dt.date | None] = mapped_column(DateTime, nullable=True)
+    source: Mapped[str] = mapped_column(String(20), default="manual")  # manual | suggested
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=_now)
+    completed_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
 
     user: Mapped["User"] = relationship(back_populates="goals")
 
@@ -242,6 +252,24 @@ class Task(Base):
     status: Mapped[str] = mapped_column(String(20), default="open")  # open | done
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=_now)
     completed_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class ExtractionFeedback(Base):
+    """A user's correction to the AI-extracted fields on one of their
+    entries (section 20-21). Stores both sides so a future prompt/eval
+    pass can measure real extraction accuracy against ground truth the
+    user themselves supplied — never used to alter analytics after the
+    fact, only to build an eval dataset.
+    """
+
+    __tablename__ = "extraction_feedback"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    entry_id: Mapped[str] = mapped_column(ForeignKey("entries.id"), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    original_extraction: Mapped[dict] = mapped_column(JSON)
+    corrected_extraction: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=_now)
 
 
 class FocusSession(Base):

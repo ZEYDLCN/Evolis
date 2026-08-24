@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: "/timeline", label: "Timeline" },
   { href: "/evolution", label: "Evolution" },
   { href: "/projects", label: "Projects" },
+  { href: "/goals", label: "Goals" },
   { href: "/insights", label: "Insights" },
   { href: "/ask", label: "Ask Evolis" },
 ];
@@ -25,6 +26,14 @@ export default function Sidebar() {
       <Link href="/dashboard" className="mb-8 px-2">
         <EvolisLogo size={28} />
       </Link>
+
+      <button
+        onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
+        className="mb-4 flex items-center justify-between rounded-xl border border-line bg-surface px-3 py-2 text-sm text-muted transition-colors hover:border-brand-emerald hover:text-brand-emerald"
+      >
+        <span>Search</span>
+        <kbd className="rounded border border-line bg-card px-1.5 py-0.5 text-[10px] font-medium">⌘K</kbd>
+      </button>
 
       <nav className="flex flex-1 flex-col gap-1">
         {NAV_ITEMS.map((item) => {

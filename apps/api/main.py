@@ -4,7 +4,24 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from apps.api.routers import account, analytics, ask, auth, clusters, dashboard, diff, entries, graph, projects, tasks, timeline, versions
+from apps.api.routers import (
+    account,
+    analytics,
+    ask,
+    auth,
+    clusters,
+    dashboard,
+    day,
+    diff,
+    entries,
+    goals,
+    graph,
+    projects,
+    search,
+    tasks,
+    timeline,
+    versions,
+)
 from src.database.base import init_db
 from src.monitoring.metrics import http_request_duration_seconds, http_requests_total, render_metrics
 
@@ -69,3 +86,6 @@ app.include_router(analytics.router)
 app.include_router(versions.router)
 app.include_router(diff.router)
 app.include_router(ask.router)
+app.include_router(search.router)
+app.include_router(goals.router)
+app.include_router(day.router)

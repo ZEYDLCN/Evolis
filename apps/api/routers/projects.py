@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from apps.api.dependencies import get_current_user
 from src.database.base import get_db
 from src.database.models import User
-from src.services.project_service import create_project, list_projects, project_dashboard
+from src.services.project_service import create_project, list_projects, project_dashboard, project_detail
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -40,5 +40,13 @@ def get_projects(user: User = Depends(get_current_user), db: Session = Depends(g
 def get_project_dashboard(project_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict:
     try:
         return project_dashboard(db, project_id)
+    except ValueError:
+        raise HTTPException(404, "Project not found")
+
+
+@router.get("/{project_id}")
+def get_project_detail(project_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict:
+    try:
+        return project_detail(db, user.id, project_id)
     except ValueError:
         raise HTTPException(404, "Project not found")

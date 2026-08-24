@@ -8,7 +8,7 @@ import { useRequireAuth } from "../../lib/useAuth";
 import { api, Entry, EntryInsight, HeatmapDay, OnboardingStatus, Streak } from "../../lib/api";
 import { Card } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
-import { Textarea } from "../../components/ui/Input";
+import { Input, Textarea } from "../../components/ui/Input";
 import { Badge } from "../../components/ui/Badge";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { cn } from "../../lib/cn";
@@ -21,6 +21,87 @@ const STATUS_TONE: Record<string, "positive" | "negative" | "neutral"> = {
 };
 
 const PROMPT_CHIPS = ["What did you learn?", "What did you build?", "What blocked you?", "What are you proud of?"];
+
+const STATUS_OPTIONS = ["done", "partial", "blocked", "none"];
+
+/** Editable AI Extraction (section 20): lets the user correct the topics
+ * and completion status the extractor guessed. The correction is stored
+ * as ExtractionFeedback (src/database/models.py) for a future eval pass —
+ * see section 21 — never silently discarded. */
+function EntryCard({ entry, onSaved }: { entry: Entry; onSaved: (updated: Entry) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [topics, setTopics] = useState(((entry.extraction as { topics?: string[] } | null)?.topics || []).join(", "));
+  const [status, setStatus] = useState(entry.completion_status || "none");
+  const [saving, setSaving] = useState(false);
+
+  const currentTopics = (entry.extraction as { topics?: string[] } | null)?.topics || [];
+
+  async function save() {
+    setSaving(true);
+    try {
+      const updated = await api.correctEntry(entry.id, {
+        topics: topics
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean),
+        completion_status: status === "none" ? null : status,
+      });
+      onSaved(updated);
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Card>
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-xs text-muted">{new Date(entry.entry_date).toLocaleDateString()}</span>
+        <div className="flex items-center gap-2">
+          <Badge tone={STATUS_TONE[entry.completion_status || "none"]}>{entry.completion_status || "none"}</Badge>
+          <button onClick={() => setEditing((v) => !v)} className="text-xs font-medium text-muted hover:text-brand-emerald">
+            {editing ? "Cancel" : "Edit"}
+          </button>
+        </div>
+      </div>
+      <p className="text-sm text-ink">{entry.raw_text}</p>
+
+      {!editing && currentTopics.length > 0 && (
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
+          {currentTopics.map((t) => (
+            <Badge key={t}>{t}</Badge>
+          ))}
+        </div>
+      )}
+
+      {editing && (
+        <div className="mt-3 space-y-2.5 border-t border-line pt-3">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-muted">Topics (comma-separated)</label>
+            <Input value={topics} onChange={(e) => setTopics(e.target.value)} placeholder="LangGraph, RAG, Docker" />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-muted">Status</label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="w-full rounded-xl border border-line bg-card px-3.5 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-brand-emerald/30"
+            >
+              {STATUS_OPTIONS.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
+          <Button onClick={save} disabled={saving}>
+            {saving ? "Saving..." : "Save correction"}
+          </Button>
+        </div>
+      )}
+    </Card>
+  );
+}
 
 function StreakBadge({ streak }: { streak: Streak }) {
   if (streak.current_streak === 0) return null;
@@ -164,20 +245,11 @@ export default function TodayPage() {
       ) : (
         <div className="space-y-3">
           {entries.map((e) => (
-            <Card key={e.id}>
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs text-muted">{new Date(e.entry_date).toLocaleDateString()}</span>
-                <Badge tone={STATUS_TONE[e.completion_status || "none"]}>{e.completion_status || "none"}</Badge>
-              </div>
-              <p className="text-sm text-ink">{e.raw_text}</p>
-              {e.extraction && Array.isArray((e.extraction as { topics?: string[] }).topics) && (
-                <div className="mt-2.5 flex flex-wrap gap-1.5">
-                  {((e.extraction as { topics?: string[] }).topics || []).map((t) => (
-                    <Badge key={t}>{t}</Badge>
-                  ))}
-                </div>
-              )}
-            </Card>
+            <EntryCard
+              key={e.id}
+              entry={e}
+              onSaved={(updated) => setEntries((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))}
+            />
           ))}
         </div>
       )}

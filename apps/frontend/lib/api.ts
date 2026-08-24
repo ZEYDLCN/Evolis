@@ -87,6 +87,28 @@ export const api = {
 
   listProjects: () => apiFetch<Project[]>("/projects"),
   createProject: (name: string) => apiFetch<Project>("/projects", { method: "POST", body: JSON.stringify({ name }) }),
+  projectDetail: (id: string) => apiFetch<ProjectDetail>(`/projects/${encodeURIComponent(id)}`),
+
+  search: (q: string) => apiFetch<SearchResults>(`/search?q=${encodeURIComponent(q)}`),
+
+  dayDetail: (date: string) => apiFetch<DayDetail>(`/day/${date}`),
+
+  listGoals: () => apiFetch<Goal[]>("/goals"),
+  goalSuggestions: () => apiFetch<GoalSuggestion[]>("/goals/suggestions"),
+  createGoal: (payload: {
+    title: string;
+    description?: string;
+    metric_key?: string | null;
+    target_value?: number | null;
+    source?: string;
+  }) => apiFetch<{ id: string; title: string; status: string }>("/goals", { method: "POST", body: JSON.stringify(payload) }),
+  completeGoal: (id: string) => apiFetch<{ id: string; status: string }>(`/goals/${id}/complete`, { method: "POST" }),
+  deleteGoal: (id: string) => apiFetch<void>(`/goals/${id}`, { method: "DELETE" }),
+
+  correctEntry: (
+    id: string,
+    payload: { topics?: string[]; completion_status?: string | null }
+  ) => apiFetch<Entry>(`/entries/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
 
   listVersions: () => apiFetch<Version[]>("/versions"),
   generateVersion: (period_start: string, period_end: string) =>
@@ -290,4 +312,63 @@ export interface WeeklyReview {
   emerging_topic: string | null;
   biggest_improvement: { label: string; change: number } | null;
   watch: { label: string; change: number } | null;
+}
+
+export interface SearchResults {
+  entries: { id: string; date: string; snippet: string }[];
+  projects: { id: string; name: string }[];
+  topics: string[];
+  skills: { id: string; name: string }[];
+  versions: { id: string; label: string }[];
+}
+
+export interface ProjectDetail {
+  id: string;
+  name: string;
+  description: string | null;
+  technologies: string[];
+  active_days: number;
+  total_sessions: number;
+  estimated_focus_hours: number;
+  topics_touched: string[];
+  focus_trend: { week: string; hours: number }[];
+  timeline: { entry_id: string; date: string; snippet: string; topic: string | null; duration_minutes: number | null }[];
+}
+
+export interface DayDetail {
+  date: string;
+  entries: {
+    id: string;
+    text: string;
+    completion_status: string | null;
+    blockers: string[];
+    topics: string[];
+    activities: { type: string; topic: string | null; duration_minutes: number | null }[];
+  }[];
+  entry_count: number;
+  focused_minutes: number;
+  topic_breakdown: Record<string, number>;
+}
+
+export interface Goal {
+  id: string;
+  title: string;
+  description: string | null;
+  status: string;
+  metric_key: string | null;
+  target_value: number | null;
+  current_value: number | null;
+  progress_pct: number | null;
+  target_date: string | null;
+  source: string;
+  created_at: string;
+  completed_at: string | null;
+}
+
+export interface GoalSuggestion {
+  title: string;
+  description: string;
+  metric_key: string | null;
+  target_value: number | null;
+  reason: string;
 }

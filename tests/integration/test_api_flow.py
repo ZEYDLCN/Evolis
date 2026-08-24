@@ -242,6 +242,87 @@ def test_evolis_score_and_weekly_review_endpoints(client):
     assert "entries_count" in r.json()
 
 
+def test_search_endpoint_finds_entries_and_topics(client):
+    headers = _auth_headers(client)
+    client.post("/entries", json={"text": "LangGraph ile RAG pipeline geliştirdim."}, headers=headers)
+
+    r = client.get("/search?q=LangGraph", headers=headers)
+    assert r.status_code == 200
+    body = r.json()
+    assert len(body["entries"]) == 1
+    assert "LangGraph" in body["topics"]
+
+
+def test_day_detail_endpoint(client):
+    headers = _auth_headers(client)
+    client.post("/entries", json={"text": "RAG üzerine çalıştım."}, headers=headers)
+    today = dt.date.today().isoformat()
+
+    r = client.get(f"/day/{today}", headers=headers)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["entry_count"] == 1
+    assert body["date"] == today
+
+    r = client.get("/day/not-a-date", headers=headers)
+    assert r.status_code == 422
+
+
+def test_project_detail_endpoint(client):
+    headers = _auth_headers(client)
+    r = client.post("/projects", json={"name": "Voxera", "technologies": ["FastAPI"]}, headers=headers)
+    project_id = r.json()["id"]
+
+    r = client.get(f"/projects/{project_id}", headers=headers)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["id"] == project_id
+    assert body["name"] == "Voxera"
+    assert "focus_trend" in body and "timeline" in body
+
+    r = client.get("/projects/does-not-exist", headers=headers)
+    assert r.status_code == 404
+
+
+def test_goals_crud_and_suggestions(client):
+    headers = _auth_headers(client)
+
+    r = client.get("/goals/suggestions", headers=headers)
+    assert r.status_code == 200
+
+    r = client.post("/goals", json={"title": "Ship v2"}, headers=headers)
+    assert r.status_code == 201, r.text
+    goal_id = r.json()["id"]
+
+    r = client.get("/goals", headers=headers)
+    assert r.status_code == 200
+    assert len(r.json()) == 1
+
+    r = client.post(f"/goals/{goal_id}/complete", headers=headers)
+    assert r.status_code == 200
+    assert r.json()["status"] == "done"
+
+    r = client.delete(f"/goals/{goal_id}", headers=headers)
+    assert r.status_code == 204
+
+    r = client.delete(f"/goals/{goal_id}", headers=headers)
+    assert r.status_code == 404
+
+
+def test_entry_correction_records_feedback(client):
+    headers = _auth_headers(client)
+    r = client.post("/entries", json={"text": "LangGraph çalıştım."}, headers=headers)
+    entry_id = r.json()["id"]
+
+    r = client.patch(f"/entries/{entry_id}", json={"topics": ["LangGraph", "RAG"], "completion_status": "done"}, headers=headers)
+    assert r.status_code == 200, r.text
+    assert r.json()["completion_status"] == "done"
+    assert set(r.json()["extraction"]["topics"]) == {"LangGraph", "RAG"}
+
+    r = client.patch("/entries/does-not-exist", json={"completion_status": "done"}, headers=headers)
+    assert r.status_code == 404
+
+
 def test_google_auth_reports_not_configured_by_default(client):
     r = client.get("/auth/google/config")
     assert r.status_code == 200

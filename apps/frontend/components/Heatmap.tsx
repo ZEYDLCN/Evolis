@@ -1,3 +1,4 @@
+import { useRouter } from "next/navigation";
 import { HeatmapDay } from "../lib/api";
 
 const CELL = 11;
@@ -9,8 +10,10 @@ function levelClass(count: number): string {
   return LEVEL_CLASS[Math.min(count, LEVEL_CLASS.length - 1)];
 }
 
-/** GitHub-style contribution grid: one column per week, Sun-Sat rows. */
+/** GitHub-style contribution grid: one column per week, Sun-Sat rows.
+ * Clicking a day with entries opens its Daily Detail page (section 18-19). */
 export default function Heatmap({ days }: { days: HeatmapDay[] }) {
+  const router = useRouter();
   if (days.length === 0) return null;
 
   const firstDate = new Date(days[0].date + "T00:00:00");
@@ -29,10 +32,13 @@ export default function Heatmap({ days }: { days: HeatmapDay[] }) {
           <div key={wi} className="flex flex-col" style={{ gap: GAP }}>
             {week.map((day, di) =>
               day ? (
-                <div
+                <button
                   key={di}
+                  type="button"
+                  disabled={day.count === 0}
+                  onClick={() => router.push(`/day/${day.date}`)}
                   title={`${day.date}: ${day.count} entr${day.count === 1 ? "y" : "ies"}`}
-                  className={`rounded-sm ${levelClass(day.count)}`}
+                  className={`rounded-sm ${levelClass(day.count)} ${day.count > 0 ? "cursor-pointer" : "cursor-default"}`}
                   style={{ width: CELL, height: CELL }}
                 />
               ) : (

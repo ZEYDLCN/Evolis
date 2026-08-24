@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import AppShell from "../../components/AppShell";
 import { useRequireAuth } from "../../lib/useAuth";
 import { api, Project } from "../../lib/api";
@@ -63,11 +64,13 @@ export default function ProjectsPage() {
       ) : (
         <div className="space-y-3">
           {projects.map((p) => (
-            <Card key={p.id}>
-              <div className="font-semibold text-ink">{p.name}</div>
-              {p.description && <p className="mt-1 text-sm text-muted">{p.description}</p>}
-              {p.technologies && p.technologies.length > 0 && <p className="mt-1 text-sm text-muted">{p.technologies.join(", ")}</p>}
-            </Card>
+            <Link key={p.id} href={`/projects/${p.id}`}>
+              <Card className="transition-colors hover:border-brand-emerald/40">
+                <div className="font-semibold text-ink">{p.name}</div>
+                {p.description && <p className="mt-1 text-sm text-muted">{p.description}</p>}
+                {p.technologies && p.technologies.length > 0 && <p className="mt-1 text-sm text-muted">{p.technologies.join(", ")}</p>}
+              </Card>
+            </Link>
           ))}
         </div>
       )}
