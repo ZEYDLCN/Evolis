@@ -130,7 +130,7 @@ export default function GoalsPage() {
 
       <Card className="mb-6">
         <form onSubmit={submit} className="flex gap-3">
-          <Input placeholder="Add a custom goal" value={title} onChange={(e) => setTitle(e.target.value)} />
+          <Input placeholder={t("goals.addPlaceholder")} value={title} onChange={(e) => setTitle(e.target.value)} />
           <Button type="submit" disabled={!title.trim()}>
             {t("common.add")}
           </Button>
@@ -152,7 +152,7 @@ export default function GoalsPage() {
       {loading ? (
         <p className="text-sm text-muted">{t("common.loading")}</p>
       ) : activeGoals.length === 0 ? (
-        <EmptyState icon="🎯" title="No active goals yet" />
+        <EmptyState icon="🎯" title={t("goals.noActive")} />
       ) : (
         <div className="mb-6 space-y-3">
           {activeGoals.map((g) => (

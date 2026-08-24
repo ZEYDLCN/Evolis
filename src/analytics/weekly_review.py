@@ -47,7 +47,7 @@ class WeeklyReview:
         }
 
 
-def build_weekly_review(db: Session, user_id: str, now: dt.datetime | None = None) -> WeeklyReview:
+def build_weekly_review(db: Session, user_id: str, now: dt.datetime | None = None, lang: str = "en") -> WeeklyReview:
     now = now or dt.datetime.utcnow()
     start, end = period_bounds("weekly", now.date())
     prev_start, prev_end = period_bounds("weekly", (now - dt.timedelta(days=7)).date())
@@ -83,7 +83,7 @@ def build_weekly_review(db: Session, user_id: str, now: dt.datetime | None = Non
         if growth > best_growth:
             emerging, best_growth = topic, growth
 
-    weekly_rows = weekly_behavior_deltas(db, user_id, now)
+    weekly_rows = weekly_behavior_deltas(db, user_id, now, lang)
     improved = [r for r in weekly_rows if r["is_positive"] and r["change"] is not None]
     declined = [r for r in weekly_rows if r["is_positive"] is False and r["change"] is not None]
 

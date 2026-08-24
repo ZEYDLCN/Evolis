@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session
 
-from apps.api.dependencies import get_current_user
+from apps.api.dependencies import get_current_user, get_lang
 from src.database.base import get_db
 from src.database.models import Activity, Entry, User, Version
 from src.versions.diff import diff_versions
@@ -20,8 +20,8 @@ def _get_versions(db: Session, user: User, base: str, target: str) -> tuple[Vers
     return base_version, target_version
 
 
-def _build_release_notes(db: Session, user: User, base_version: Version, target_version: Version) -> dict:
-    diff = diff_versions(version_metrics_dict(base_version), version_metrics_dict(target_version))
+def _build_release_notes(db: Session, user: User, base_version: Version, target_version: Version, lang: str) -> dict:
+    diff = diff_versions(version_metrics_dict(base_version), version_metrics_dict(target_version), lang)
 
     active_projects = (
         db.query(Activity.project_id)
@@ -35,7 +35,7 @@ def _build_release_notes(db: Session, user: User, base_version: Version, target_
         .distinct()
         .count()
     )
-    return render_release_notes(base_version.label, target_version.label, diff, active_project_count=active_projects)
+    return render_release_notes(base_version.label, target_version.label, diff, active_project_count=active_projects, lang=lang)
 
 
 @router.get("/diff")
@@ -44,9 +44,10 @@ def get_diff(
     target: str = Query(..., description="Target version label, e.g. '1.7'"),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    lang: str = Depends(get_lang),
 ) -> dict:
     base_version, target_version = _get_versions(db, user, base, target)
-    diff = diff_versions(version_metrics_dict(base_version), version_metrics_dict(target_version))
+    diff = diff_versions(version_metrics_dict(base_version), version_metrics_dict(target_version), lang)
     return {"base": base, "target": target, **diff.to_dict()}
 
 
@@ -56,9 +57,10 @@ def get_release_notes(
     target: str = Query(...),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    lang: str = Depends(get_lang),
 ) -> dict:
     base_version, target_version = _get_versions(db, user, base, target)
-    return _build_release_notes(db, user, base_version, target_version)
+    return _build_release_notes(db, user, base_version, target_version, lang)
 
 
 @router.get("/release-notes/card")
@@ -67,9 +69,10 @@ def get_release_notes_card(
     target: str = Query(...),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    lang: str = Depends(get_lang),
 ) -> Response:
     """Shareable social card (sections 28, 41) as a self-contained SVG."""
     base_version, target_version = _get_versions(db, user, base, target)
-    notes = _build_release_notes(db, user, base_version, target_version)
-    svg = render_release_notes_svg(notes)
+    notes = _build_release_notes(db, user, base_version, target_version, lang)
+    svg = render_release_notes_svg(notes, lang)
     return Response(content=svg, media_type="image/svg+xml")

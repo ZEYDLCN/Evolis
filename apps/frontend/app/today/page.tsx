@@ -21,7 +21,7 @@ const STATUS_TONE: Record<string, "positive" | "negative" | "neutral"> = {
   none: "neutral",
 };
 
-const PROMPT_CHIPS = ["What did you learn?", "What did you build?", "What blocked you?", "What are you proud of?"];
+const PROMPT_CHIP_KEYS = ["today.learn", "today.build", "today.blocked", "today.proud"];
 
 const STATUS_OPTIONS = ["done", "partial", "blocked", "none"];
 
@@ -30,6 +30,7 @@ const STATUS_OPTIONS = ["done", "partial", "blocked", "none"];
  * as ExtractionFeedback (src/database/models.py) for a future eval pass —
  * see section 21 — never silently discarded. */
 function EntryCard({ entry, onSaved }: { entry: Entry; onSaved: (updated: Entry) => void }) {
+  const { t } = useLang();
   const [editing, setEditing] = useState(false);
   const [topics, setTopics] = useState(((entry.extraction as { topics?: string[] } | null)?.topics || []).join(", "));
   const [status, setStatus] = useState(entry.completion_status || "none");
@@ -61,7 +62,7 @@ function EntryCard({ entry, onSaved }: { entry: Entry; onSaved: (updated: Entry)
         <div className="flex items-center gap-2">
           <Badge tone={STATUS_TONE[entry.completion_status || "none"]}>{entry.completion_status || "none"}</Badge>
           <button onClick={() => setEditing((v) => !v)} className="text-xs font-medium text-muted hover:text-brand-emerald">
-            {editing ? "Cancel" : "Edit"}
+            {editing ? t("today.cancel") : t("today.editEntry")}
           </button>
         </div>
       </div>
@@ -78,11 +79,11 @@ function EntryCard({ entry, onSaved }: { entry: Entry; onSaved: (updated: Entry)
       {editing && (
         <div className="mt-3 space-y-2.5 border-t border-line pt-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-muted">Topics (comma-separated)</label>
+            <label className="mb-1 block text-xs font-medium text-muted">{t("today.topics")}</label>
             <Input value={topics} onChange={(e) => setTopics(e.target.value)} placeholder="LangGraph, RAG, Docker" />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-muted">Status</label>
+            <label className="mb-1 block text-xs font-medium text-muted">{t("today.status")}</label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
@@ -96,7 +97,7 @@ function EntryCard({ entry, onSaved }: { entry: Entry; onSaved: (updated: Entry)
             </select>
           </div>
           <Button onClick={save} disabled={saving}>
-            {saving ? "Saving..." : "Save correction"}
+            {saving ? t("common.loading") : t("today.saveCorrection")}
           </Button>
         </div>
       )}
@@ -105,34 +106,35 @@ function EntryCard({ entry, onSaved }: { entry: Entry; onSaved: (updated: Entry)
 }
 
 function StreakBadge({ streak }: { streak: Streak }) {
+  const { t } = useLang();
   if (streak.current_streak === 0) return null;
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-lime/30 px-3.5 py-1.5 text-sm font-bold text-brand-forest">
-      🔥 {streak.current_streak} day{streak.current_streak === 1 ? "" : "s"}
+      🔥 {streak.current_streak} {streak.current_streak === 1 ? t("today.streakDay") : t("today.streakDays")}
     </span>
   );
 }
 
 function InsightCelebration({ insight }: { insight: EntryInsight }) {
+  const { t } = useLang();
   const lines: string[] = [];
   if (insight.streak.is_new_best && insight.streak.current > 1) {
-    lines.push(`🏆 New personal best — ${insight.streak.current}-day streak!`);
+    lines.push(`🏆 ${t("today.newBest")} ${insight.streak.current}-${t("today.dayStreak")}`);
   } else if (insight.streak.current > 1) {
-    lines.push(`🔥 ${insight.streak.current}-day streak. Keep it going.`);
+    lines.push(`🔥 ${insight.streak.current}-${t("today.dayStreakKeepGoing")}`);
   } else {
-    lines.push(`🌱 First entry of a new streak.`);
+    lines.push(`🌱 ${t("today.firstEntry")}`);
   }
-  for (const t of insight.recurring_topics) {
-    const ord = t.mentions_this_week === 2 ? "nd" : t.mentions_this_week === 3 ? "rd" : "th";
-    lines.push(`🔁 ${t.topic} — this is your ${t.mentions_this_week}${ord} mention this week.`);
+  for (const topic of insight.recurring_topics) {
+    lines.push(`🔁 ${topic.topic} — ${t("today.thisIsYour")} ${topic.mentions_this_week}${t("today.mentionThisWeek")}`);
   }
-  for (const t of insight.new_topics) {
-    lines.push(`✨ New topic detected → ${t}`);
+  for (const topic of insight.new_topics) {
+    lines.push(`✨ ${t("today.newTopicDetected")} ${topic}`);
   }
 
   return (
     <Card className="border-brand-emerald/20 bg-brand-lime/10">
-      <div className="mb-1 text-sm font-semibold text-brand-emerald">Entry analyzed ✓</div>
+      <div className="mb-1 text-sm font-semibold text-brand-emerald">{t("today.entryAnalyzed")}</div>
       {lines.map((line, i) => (
         <div key={i} className={cn("py-0.5 text-sm text-ink", i === 0 && "font-semibold")}>
           {line}
@@ -210,19 +212,19 @@ export default function TodayPage() {
       <Card className="mb-6">
         <Textarea
           className="min-h-[110px]"
-          placeholder="What happened today? Bugün 45 dakika İngilizce çalıştım, 30 dakika yürüdüm, 2 saat proje geliştirdim..."
+          placeholder={`${t("today.entryPlaceholderPrefix")} Bugün 45 dakika İngilizce çalıştım, 30 dakika yürüdüm, 2 saat proje geliştirdim...`}
           value={text}
           onChange={(e) => setText(e.target.value)}
         />
         <div className="mt-3 flex flex-wrap gap-2">
-          {PROMPT_CHIPS.map((chip) => (
+          {PROMPT_CHIP_KEYS.map((key) => (
             <button
-              key={chip}
+              key={key}
               type="button"
-              onClick={() => usePromptChip(chip)}
+              onClick={() => usePromptChip(t(key))}
               className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-medium text-muted transition-colors hover:border-brand-emerald hover:text-brand-emerald"
             >
-              {chip}
+              {t(key)}
             </button>
           ))}
         </div>

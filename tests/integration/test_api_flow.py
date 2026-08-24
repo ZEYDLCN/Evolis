@@ -209,6 +209,36 @@ def test_ask_response_includes_tool_trace(client):
     assert len(body["tool_trace"]) >= 3
 
 
+def test_x_evolis_lang_header_localizes_responses(client):
+    headers = _auth_headers(client)
+    tr_headers = {**headers, "X-Evolis-Lang": "tr"}
+
+    client.post(
+        "/entries",
+        json={"text": "Bugün 45 dakika İngilizce çalıştım, akşam kitap okudum ama odaklanmakta zorlandım."},
+        headers=headers,
+    )
+
+    # Domain labels localize.
+    r = client.get("/analytics/domains", headers=tr_headers)
+    assert "Öğrenme" in r.json()
+
+    # Onboarding step labels localize.
+    r = client.get("/analytics/onboarding", headers=tr_headers)
+    first_step = next(s for s in r.json()["steps"] if s["key"] == "first_entry")
+    assert first_step["label"] == "İlk kaydını yaz"
+
+    # English is still the default with no header.
+    r = client.get("/analytics/onboarding", headers=headers)
+    first_step = next(s for s in r.json()["steps"] if s["key"] == "first_entry")
+    assert first_step["label"] == "Write your first entry"
+
+    # Ask Evolis fallback template localizes too.
+    r = client.post("/ask", json={"question": "How have I changed?"}, headers=tr_headers)
+    assert r.status_code == 200
+    assert isinstance(r.json()["tool_trace"], list) and len(r.json()["tool_trace"]) >= 3
+
+
 def test_domains_endpoint_groups_broader_life_topics(client):
     headers = _auth_headers(client)
     client.post(

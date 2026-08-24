@@ -17,9 +17,10 @@ const CONFIDENCE_TONE: Record<string, "positive" | "negative" | "neutral" | "inf
 };
 
 function ConfidenceBadge({ confidence }: { confidence: "low" | "medium" | "high" }) {
+  const { t } = useLang();
   return (
     <Badge tone={CONFIDENCE_TONE[confidence]} className="ml-2 shrink-0 text-[10px] uppercase">
-      {confidence} confidence
+      {confidence} {t("insights.confidence")}
     </Badge>
   );
 }
@@ -27,12 +28,13 @@ function ConfidenceBadge({ confidence }: { confidence: "low" | "medium" | "high"
 const DIRECTION_ICON: Record<string, string> = { up: "↑", down: "↓", flat: "→" };
 
 function ForecastRow({ label, unit, forecast }: { label: string; unit: string; forecast: TrendForecastResponse["completion_rate"] }) {
+  const { t } = useLang();
   return (
     <div className="mb-3 last:mb-0">
       <div className="mb-1 flex items-center justify-between text-sm">
         <span className="text-ink">{label}</span>
         <span className="font-mono text-muted">
-          {DIRECTION_ICON[forecast.direction]} next week ≈ {forecast.forecast_next}
+          {DIRECTION_ICON[forecast.direction]} {t("insights.nextWeek")} {forecast.forecast_next}
           {unit}
         </span>
       </div>
@@ -42,7 +44,9 @@ function ForecastRow({ label, unit, forecast }: { label: string; unit: string; f
           return <div key={i} className="flex-1 rounded-t bg-brand-emerald/50" style={{ height: `${Math.max(4, (v / max) * 32)}px` }} />;
         })}
       </div>
-      <div className="mt-1 text-[10px] uppercase tracking-wide text-muted">{forecast.confidence} confidence projection</div>
+      <div className="mt-1 text-[10px] uppercase tracking-wide text-muted">
+        {forecast.confidence} {t("insights.confidenceProjection")}
+      </div>
     </div>
   );
 }
@@ -70,21 +74,30 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+// Keyed by both English and Turkish domain labels — the backend sends
+// whichever one matches X-Evolis-Lang (see src/extraction/domains.py).
 const DOMAIN_ICON: Record<string, string> = {
   Skills: "🎯",
+  Beceriler: "🎯",
   "Work & Projects": "💼",
+  "İş ve Projeler": "💼",
   Learning: "📚",
+  Öğrenme: "📚",
   "Habits & Routines": "🔁",
+  "Alışkanlıklar ve Rutinler": "🔁",
   "Personal Growth": "🌱",
+  "Kişisel Gelişim": "🌱",
   Behavior: "📊",
+  Davranış: "📊",
 };
 
 /** Broader life tracking: the same interest scores as "Interest Drift"
  * used to show, grouped under the five life domains (plus Behavior) —
  * Evolis is meant to track more than just tech skills. */
 function DomainGroups({ domains }: { domains: Record<string, Record<string, number>> }) {
+  const { t } = useLang();
   const names = Object.keys(domains);
-  if (names.length === 0) return <p className="text-sm text-muted">Not enough data yet.</p>;
+  if (names.length === 0) return <p className="text-sm text-muted">{t("empty.noData")}</p>;
 
   return (
     <div className="space-y-4">
@@ -157,7 +170,7 @@ export default function InsightsPage() {
 
           <Section title={t("insights.skills")}>
             {skills.length === 0 ? (
-              <p className="text-sm text-muted">Not enough data yet.</p>
+              <p className="text-sm text-muted">{t("empty.noData")}</p>
             ) : (
               skills.map((s) => (
                 <div key={s.skill} className="flex justify-between py-1 text-sm">
@@ -170,7 +183,7 @@ export default function InsightsPage() {
 
           <Section title={t("insights.skillGraph")}>
             {graph.edges.length === 0 ? (
-              <p className="text-sm text-muted">No progression edges yet — as your skills connect (e.g. Python → Machine Learning), they'll show up here.</p>
+              <p className="text-sm text-muted">{t("insights.noProgressionEdges")}</p>
             ) : (
               graph.edges.map((e, i) => (
                 <div key={i} className="py-0.5 font-mono text-sm text-ink">
@@ -184,30 +197,35 @@ export default function InsightsPage() {
             <Section title={t("insights.behavior")}>
               <div className="space-y-1 text-sm text-ink">
                 <div>
-                  Completion Rate: {(behavior.completion_rate * 100).toFixed(0)}% ({behavior.source})
+                  {t("insights.completionRateLabel")}: {(behavior.completion_rate * 100).toFixed(0)}% ({behavior.source})
                 </div>
-                <div>Deep Work: {behavior.deep_work_hours_per_day}h/day</div>
-                <div>Context Switching: {behavior.context_switching_per_day}/day</div>
+                <div>
+                  {t("insights.deepWorkLabel")}: {behavior.deep_work_hours_per_day}h/day
+                </div>
+                <div>
+                  {t("insights.contextSwitchingLabel")}: {behavior.context_switching_per_day}/day
+                </div>
               </div>
             </Section>
           )}
 
           {forecast && (
             <Section title={t("insights.trendForecast")}>
-              <ForecastRow label="Completion Rate" unit="" forecast={forecast.completion_rate} />
-              <ForecastRow label="Deep Work" unit="h/day" forecast={forecast.deep_work_hours_per_day} />
+              <ForecastRow label={t("insights.completionRateLabel")} unit="" forecast={forecast.completion_rate} />
+              <ForecastRow label={t("insights.deepWorkLabel")} unit="h/day" forecast={forecast.deep_work_hours_per_day} />
             </Section>
           )}
 
           <Section title={t("insights.unusualActivity")}>
             {anomalies.length === 0 ? (
-              <p className="text-sm text-muted">Nothing unusual this week.</p>
+              <p className="text-sm text-muted">{t("insights.nothingUnusual")}</p>
             ) : (
               anomalies.map((a) => (
                 <div key={a.metric} className="mb-1.5 flex items-start justify-between text-sm text-ink">
                   <span>
-                    <strong>{a.metric}</strong> is {a.ratio ? `${a.ratio.toFixed(1)}x` : ""} your 8-week average ({Math.round(a.current_value)} vs ~
-                    {Math.round(a.baseline_mean)} min).
+                    <strong>{a.metric}</strong> {a.ratio ? `${a.ratio.toFixed(1)}x ` : ""}
+                    {t("insights.isYourAvg")} ({Math.round(a.current_value)} {t("insights.vs")}
+                    {Math.round(a.baseline_mean)} {t("insights.min")}).
                   </span>
                   <ConfidenceBadge confidence={a.confidence} />
                 </div>
@@ -217,7 +235,7 @@ export default function InsightsPage() {
 
           <Section title={t("insights.patterns")}>
             {patterns.length === 0 ? (
-              <p className="text-sm text-muted">No strong associations detected yet.</p>
+              <p className="text-sm text-muted">{t("insights.noPatterns")}</p>
             ) : (
               patterns.map((p, i) => (
                 <div key={i} className="mb-1.5 flex items-start justify-between text-sm text-ink">

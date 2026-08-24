@@ -24,6 +24,20 @@ DOMAIN_LABELS: dict[str, str] = {
     "behavior": "Behavior",
 }
 
+DOMAIN_LABELS_TR: dict[str, str] = {
+    "skills": "Beceriler",
+    "work_projects": "İş ve Projeler",
+    "learning": "Öğrenme",
+    "habits_routines": "Alışkanlıklar ve Rutinler",
+    "personal_growth": "Kişisel Gelişim",
+    "behavior": "Davranış",
+}
+
+
+def domain_label(domain: str, lang: str = "en") -> str:
+    """Turkish UI mode: the localized display name for a domain key."""
+    return DOMAIN_LABELS_TR[domain] if lang == "tr" else DOMAIN_LABELS[domain]
+
 # Order used wherever domains are rendered as sections (release notes,
 # grouped diffs, insights) — behavior signals last since they're states,
 # not areas of growth.

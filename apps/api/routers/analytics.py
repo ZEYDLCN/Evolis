@@ -3,7 +3,7 @@ import datetime as dt
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from apps.api.dependencies import get_current_user
+from apps.api.dependencies import get_current_user, get_lang
 from src.analytics.anomalies import detect_learning_time_anomalies
 from src.analytics.domains import domain_breakdown
 from src.analytics.evolis_score import compute_evolis_score
@@ -35,9 +35,14 @@ def get_interests(months: int = Query(3, ge=1, le=36), user: User = Depends(get_
 
 
 @router.get("/domains")
-def get_domains(months: int = Query(3, ge=1, le=36), user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict:
+def get_domains(
+    months: int = Query(3, ge=1, le=36),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    lang: str = Depends(get_lang),
+) -> dict:
     start, end = _default_range(months)
-    return domain_breakdown(db, user.id, start, end)
+    return domain_breakdown(db, user.id, start, end, lang)
 
 
 @router.get("/skills")
@@ -75,7 +80,9 @@ def get_anomalies(user: User = Depends(get_current_user), db: Session = Depends(
 
 
 @router.get("/patterns")
-def get_patterns(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[dict]:
+def get_patterns(
+    user: User = Depends(get_current_user), db: Session = Depends(get_db), lang: str = Depends(get_lang)
+) -> list[dict]:
     finding = detect_project_load_vs_completion(db, user.id)
     if not finding:
         return []
@@ -83,7 +90,7 @@ def get_patterns(user: User = Depends(get_current_user), db: Session = Depends(g
         {
             "correlation": finding.correlation,
             "weeks_observed": finding.weeks_observed,
-            "description": finding.description,
+            "description": finding.description(lang),
             "confidence": finding.confidence,
         }
     ]
@@ -114,8 +121,10 @@ def get_heatmap(days: int = Query(365, ge=7, le=730), user: User = Depends(get_c
 
 
 @router.get("/onboarding")
-def get_onboarding(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict:
-    return compute_onboarding_status(db, user.id).to_dict()
+def get_onboarding(
+    user: User = Depends(get_current_user), db: Session = Depends(get_db), lang: str = Depends(get_lang)
+) -> dict:
+    return compute_onboarding_status(db, user.id, lang).to_dict()
 
 
 @router.get("/evolis-score")
@@ -124,5 +133,7 @@ def get_evolis_score(user: User = Depends(get_current_user), db: Session = Depen
 
 
 @router.get("/weekly-review")
-def get_weekly_review(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict:
-    return build_weekly_review(db, user.id).to_dict()
+def get_weekly_review(
+    user: User = Depends(get_current_user), db: Session = Depends(get_db), lang: str = Depends(get_lang)
+) -> dict:
+    return build_weekly_review(db, user.id, lang=lang).to_dict()

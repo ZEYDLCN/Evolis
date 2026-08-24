@@ -12,13 +12,7 @@ import { PageHeader } from "../../components/ui/PageHeader";
 import { useLang } from "../../components/LangProvider";
 import { cn } from "../../lib/cn";
 
-const SUGGESTIONS = [
-  "How have I changed?",
-  "What am I focusing on lately?",
-  "What skill is growing fastest?",
-  "Why has my completion rate changed?",
-  "What patterns should I notice?",
-];
+const SUGGESTION_KEYS = ["ask.suggestion1", "ask.suggestion2", "ask.suggestion3", "ask.suggestion4", "ask.suggestion5"];
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -33,12 +27,13 @@ interface ChatMessage {
  * final wording is LLM-generated. */
 function ToolTracePanel({ trace }: { trace: ToolTraceStep[] }) {
   const [expanded, setExpanded] = useState(false);
+  const { t } = useLang();
   if (trace.length === 0) return null;
 
   return (
     <div className="mt-2 border-t border-line pt-2">
       <button onClick={() => setExpanded((e) => !e)} className="text-xs font-semibold text-muted hover:text-brand-emerald">
-        {expanded ? "Hide" : "How was this computed?"}
+        {expanded ? t("ask.hide") : t("ask.howComputed")}
       </button>
       {expanded && (
         <ol className="mt-2 space-y-1.5">
@@ -55,12 +50,13 @@ function ToolTracePanel({ trace }: { trace: ToolTraceStep[] }) {
 
 function EvidencePanel({ evidence }: { evidence: AskEvidence }) {
   const [expanded, setExpanded] = useState(false);
+  const { t } = useLang();
   if (evidence.entries_analyzed === 0 && evidence.bullets.length === 0) return null;
 
   return (
     <div className="mt-3 border-t border-line pt-3">
       <div className="text-xs font-medium text-muted">
-        Based on {evidence.entries_analyzed} {evidence.entries_analyzed === 1 ? "entry" : "entries"}
+        {t("ask.basedOn")} {evidence.entries_analyzed} {evidence.entries_analyzed === 1 ? t("ask.entry") : t("ask.entries")}
       </div>
       {evidence.bullets.length > 0 && (
         <ul className="mt-1.5 space-y-0.5">
@@ -74,7 +70,7 @@ function EvidencePanel({ evidence }: { evidence: AskEvidence }) {
       {evidence.source_entries.length > 0 && (
         <>
           <button onClick={() => setExpanded((e) => !e)} className="mt-2 text-xs font-semibold text-brand-emerald hover:underline">
-            {expanded ? "Hide evidence" : "View evidence"}
+            {expanded ? t("ask.hideEvidence") : t("ask.viewEvidence")}
           </button>
           {expanded && (
             <div className="mt-2 space-y-2">
@@ -126,13 +122,13 @@ export default function AskPage() {
 
       {messages.length === 0 && (
         <div className="mb-6 flex flex-wrap gap-2">
-          {SUGGESTIONS.map((s) => (
+          {SUGGESTION_KEYS.map((key) => (
             <button
-              key={s}
-              onClick={() => ask(s)}
+              key={key}
+              onClick={() => ask(t(key))}
               className="rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-brand-emerald hover:text-brand-emerald"
             >
-              {s}
+              {t(key)}
             </button>
           ))}
         </div>
@@ -149,7 +145,7 @@ export default function AskPage() {
               <Card className="max-w-[85%] rounded-bl-sm">
                 {m.queryClass && (
                   <Badge tone="info" className="mb-2">
-                    {m.queryClass}
+                    {t(`query.${m.queryClass}`)}
                   </Badge>
                 )}
                 <p className="text-sm text-ink">{m.text}</p>
@@ -162,7 +158,7 @@ export default function AskPage() {
         {loading && (
           <div className="flex justify-start">
             <Card className="rounded-bl-sm">
-              <p className="text-sm text-muted">Thinking...</p>
+              <p className="text-sm text-muted">{t("ask.thinking")}</p>
             </Card>
           </div>
         )}

@@ -38,6 +38,16 @@ def _fmt_pct(x: float) -> str:
     return f"{sign}{x * 100:.0f}%"
 
 
+# Turkish UI mode: the dashboard's hero/insight sentences are generated
+# from real deltas (never an LLM guess — see the module docstring), so
+# localizing them is template substitution per language, not translation
+# of free text. Every f-string below has a lang branch next to it rather
+# than a giant lookup table, so the template and its data stay next to
+# each other.
+def _t(lang: str, en: str, tr: str) -> str:
+    return tr if lang == "tr" else en
+
+
 @dataclass
 class DashboardSummary:
     greeting_name: str | None
@@ -101,7 +111,7 @@ def _current_version_card(db: Session, user_id: str) -> dict | None:
     }
 
 
-def _focus_shift(db: Session, user_id: str, now: dt.datetime) -> tuple[list[dict], str | None]:
+def _focus_shift(db: Session, user_id: str, now: dt.datetime, lang: str = "en") -> tuple[list[dict], str | None]:
     start = now - dt.timedelta(days=FOCUS_SHIFT_DAYS)
     scores = topic_interest_scores(db, user_id, start, now)
     if not scores:
@@ -122,12 +132,16 @@ def _focus_shift(db: Session, user_id: str, now: dt.datetime) -> tuple[list[dict
         if change is not None and change > best_change:
             best_topic, best_change = topic, change
     if best_topic:
-        note = f"{best_topic} has grown {_fmt_pct(best_change)} since your previous 90 days."
+        note = _t(
+            lang,
+            f"{best_topic} has grown {_fmt_pct(best_change)} since your previous 90 days.",
+            f"{best_topic}, önceki 90 güne göre {_fmt_pct(best_change)} arttı.",
+        )
 
     return bars, note
 
 
-def weekly_behavior_deltas(db: Session, user_id: str, now: dt.datetime) -> list[dict]:
+def weekly_behavior_deltas(db: Session, user_id: str, now: dt.datetime, lang: str = "en") -> list[dict]:
     this_start, this_end = period_bounds("weekly", now.date())
     last_start, last_end = period_bounds("weekly", (now - dt.timedelta(days=7)).date())
 
@@ -143,9 +157,9 @@ def weekly_behavior_deltas(db: Session, user_id: str, now: dt.datetime) -> list[
         return {"key": key, "label": label, "before": before, "after": after, "change": change, "is_positive": is_positive}
 
     return [
-        entry("deep_work_hours_per_day", "Deep Work", higher_is_better=True),
-        entry("completion_rate", "Completion", higher_is_better=True),
-        entry("context_switching_per_day", "Context Switching", higher_is_better=False),
+        entry("deep_work_hours_per_day", _t(lang, "Deep Work", "Derin Çalışma"), higher_is_better=True),
+        entry("completion_rate", _t(lang, "Completion", "Tamamlanma"), higher_is_better=True),
+        entry("context_switching_per_day", _t(lang, "Context Switching", "Bağlam Değişimi"), higher_is_better=False),
     ]
 
 
@@ -169,14 +183,18 @@ def _consecutive_growth_weeks(db: Session, user_id: str, topic: str, now: dt.dat
     return streak
 
 
-def _build_insight(db: Session, user_id: str, focus_bars: list[dict], now: dt.datetime) -> dict | None:
+def _build_insight(db: Session, user_id: str, focus_bars: list[dict], now: dt.datetime, lang: str = "en") -> dict | None:
     anomalies = detect_learning_time_anomalies(db, user_id, now=now)
     if anomalies:
         a = anomalies[0]
         return {
             "type": "anomaly",
-            "headline": f"{a.metric} is unusually high this week.",
-            "detail": f"{round(a.current_value)} minutes vs your ~{round(a.baseline_mean)}-minute average.",
+            "headline": _t(lang, f"{a.metric} is unusually high this week.", f"{a.metric} bu hafta olağan dışı yüksek."),
+            "detail": _t(
+                lang,
+                f"{round(a.current_value)} minutes vs your ~{round(a.baseline_mean)}-minute average.",
+                f"~{round(a.baseline_mean)} dakikalık ortalamana karşı {round(a.current_value)} dakika.",
+            ),
         }
 
     if focus_bars:
@@ -184,28 +202,44 @@ def _build_insight(db: Session, user_id: str, focus_bars: list[dict], now: dt.da
         weeks = _consecutive_growth_weeks(db, user_id, top_topic, now)
         if weeks >= 2:
             contributors = [b["topic"] for b in focus_bars[1:3]]
-            detail = f"Most of that growth comes from {', '.join([top_topic] + contributors)}." if contributors else None
+            detail = (
+                _t(
+                    lang,
+                    f"Most of that growth comes from {', '.join([top_topic] + contributors)}.",
+                    f"Bu artışın büyük kısmı {', '.join([top_topic] + contributors)} kaynaklı.",
+                )
+                if contributors
+                else None
+            )
             return {
                 "type": "growth_streak",
-                "headline": f"Your {top_topic}-related activity has increased for {weeks} consecutive weeks.",
+                "headline": _t(
+                    lang,
+                    f"Your {top_topic}-related activity has increased for {weeks} consecutive weeks.",
+                    f"{top_topic} ile ilgili aktiviten {weeks} haftadır art arda artıyor.",
+                ),
                 "detail": detail,
             }
 
     pattern = detect_project_load_vs_completion(db, user_id, now=now)
     if pattern:
-        return {"type": "pattern", "headline": pattern.description, "detail": None}
+        return {"type": "pattern", "headline": pattern.description(lang), "detail": None}
 
     if focus_bars:
         return {
             "type": "top_interest",
-            "headline": f"{focus_bars[0]['topic']} is your strongest focus area right now.",
+            "headline": _t(
+                lang,
+                f"{focus_bars[0]['topic']} is your strongest focus area right now.",
+                f"Şu anki en güçlü odak alanın {focus_bars[0]['topic']}.",
+            ),
             "detail": None,
         }
 
     return None
 
 
-def _recent_activity(db: Session, user_id: str, today: dt.date, limit: int = 5) -> list[dict]:
+def _recent_activity(db: Session, user_id: str, today: dt.date, limit: int = 5, lang: str = "en") -> list[dict]:
     entries = (
         db.query(Entry)
         .filter(Entry.user_id == user_id)
@@ -218,18 +252,20 @@ def _recent_activity(db: Session, user_id: str, today: dt.date, limit: int = 5) 
         d = e.entry_date.date() if isinstance(e.entry_date, dt.datetime) else e.entry_date
         days_ago = (today - d).days
         if days_ago == 0:
-            when = "Today"
+            when = _t(lang, "Today", "Bugün")
         elif days_ago == 1:
-            when = "Yesterday"
+            when = _t(lang, "Yesterday", "Dün")
         else:
-            when = f"{days_ago} days ago"
+            when = _t(lang, f"{days_ago} days ago", f"{days_ago} gün önce")
         topics = [t.topic for t in e.topics][:2]
         summary = ", ".join(topics) if topics else (e.raw_text[:60] + ("…" if len(e.raw_text) > 60 else ""))
         out.append({"when": when, "date": d.isoformat(), "summary": summary})
     return out
 
 
-def build_dashboard_summary(db: Session, user_id: str, display_name: str | None, now: dt.datetime | None = None) -> DashboardSummary:
+def build_dashboard_summary(
+    db: Session, user_id: str, display_name: str | None, now: dt.datetime | None = None, lang: str = "en"
+) -> DashboardSummary:
     now = now or dt.datetime.utcnow()
     today = now.date()
 
@@ -237,32 +273,50 @@ def build_dashboard_summary(db: Session, user_id: str, display_name: str | None,
     onboarding_gate = entry_count < 3
 
     streak_info = compute_streak(db, user_id, today=today)
-    focus_bars, focus_note = _focus_shift(db, user_id, now)
-    weekly = weekly_behavior_deltas(db, user_id, now)
+    focus_bars, focus_note = _focus_shift(db, user_id, now, lang)
+    weekly = weekly_behavior_deltas(db, user_id, now, lang)
     version_card = _current_version_card(db, user_id)
-    insight = None if onboarding_gate else _build_insight(db, user_id, focus_bars, now)
-    recent = _recent_activity(db, user_id, today)
+    insight = None if onboarding_gate else _build_insight(db, user_id, focus_bars, now, lang)
+    recent = _recent_activity(db, user_id, today, lang=lang)
     evolis_score = None if onboarding_gate else compute_evolis_score(db, user_id, now).to_dict()
 
     hero_stats = []
     deep_work_row = next((w for w in weekly if w["key"] == "deep_work_hours_per_day"), None)
     if deep_work_row and deep_work_row["change"] is not None:
-        hero_stats.append(f"{_fmt_pct(deep_work_row['change'])} focused work")
+        hero_stats.append(_t(lang, f"{_fmt_pct(deep_work_row['change'])} focused work", f"{_fmt_pct(deep_work_row['change'])} odaklı çalışma"))
 
     emerging_count = sum(1 for b in focus_bars if b["score"] >= 0.15) if focus_bars else 0
     if emerging_count:
-        hero_stats.append(f"{emerging_count} active focus area{'s' if emerging_count != 1 else ''}")
+        hero_stats.append(
+            _t(
+                lang,
+                f"{emerging_count} active focus area{'s' if emerging_count != 1 else ''}",
+                f"{emerging_count} aktif odak alanı",
+            )
+        )
 
     anomaly_count = len(detect_learning_time_anomalies(db, user_id, now=now)) if not onboarding_gate else 0
     if anomaly_count:
-        hero_stats.append(f"{anomaly_count} unusual activity pattern{'s' if anomaly_count != 1 else ''} detected")
+        hero_stats.append(
+            _t(
+                lang,
+                f"{anomaly_count} unusual activity pattern{'s' if anomaly_count != 1 else ''} detected",
+                f"{anomaly_count} olağan dışı aktivite örüntüsü tespit edildi",
+            )
+        )
 
     if onboarding_gate:
-        headline = "Log a few more days and Evolis will start showing you real patterns."
+        headline = _t(
+            lang,
+            "Log a few more days and Evolis will start showing you real patterns.",
+            "Birkaç gün daha kayıt gir, Evolis gerçek örüntüleri göstermeye başlasın.",
+        )
     elif focus_bars:
-        headline = f"Your focus is shifting toward {focus_bars[0]['topic']}."
+        headline = _t(lang, f"Your focus is shifting toward {focus_bars[0]['topic']}.", f"Odağın {focus_bars[0]['topic']} yönüne kayıyor.")
     else:
-        headline = "Keep logging — your focus trend will show up here soon."
+        headline = _t(
+            lang, "Keep logging — your focus trend will show up here soon.", "Kayıt girmeye devam et — odak trendin yakında burada görünecek."
+        )
 
     return DashboardSummary(
         greeting_name=display_name,

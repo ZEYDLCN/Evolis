@@ -25,22 +25,29 @@ percentage or count. Be concise, second person, and specific. Respond in the
 same language as the question."""
 
 
-def ask(db: Session, user_id: str, question: str) -> dict:
+def ask(db: Session, user_id: str, question: str, lang: str = "en") -> dict:
     from src.agents.graph import run_ask_graph
 
-    return run_ask_graph(db, user_id, question)
+    return run_ask_graph(db, user_id, question, lang)
 
 
-def _explain(question: str, analysis: dict) -> str:
+def _explain(question: str, analysis: dict, lang: str = "en") -> str:
     if os.getenv("ANTHROPIC_API_KEY"):
         try:
             import anthropic
 
             client = anthropic.Anthropic()
+            # The prompt already says "same language as the question" —
+            # that's usually right (a Turkish entry gets a Turkish
+            # answer). This only steers the rare case where the question
+            # itself doesn't clearly signal a language.
+            system = EXPLAIN_SYSTEM_PROMPT + (
+                f"\n\nIf the question's language is ambiguous, default to {'Turkish' if lang == 'tr' else 'English'}."
+            )
             response = client.messages.create(
                 model="claude-sonnet-5",
                 max_tokens=512,
-                system=EXPLAIN_SYSTEM_PROMPT,
+                system=system,
                 messages=[{"role": "user", "content": f"Question: {question}\n\nData: {analysis}"}],
             )
             llm_calls_total.labels(purpose="ask_explain", outcome="success").inc()
@@ -49,11 +56,26 @@ def _explain(question: str, analysis: dict) -> str:
             llm_calls_total.labels(purpose="ask_explain", outcome="error").inc()
 
     llm_calls_total.labels(purpose="ask_explain", outcome="fallback").inc()
-    return _template_explain(analysis)
+    return _template_explain(analysis, lang)
 
 
-def _template_explain(analysis: dict) -> str:
+def _template_explain(analysis: dict, lang: str = "en") -> str:
     parts = []
+    if lang == "tr":
+        if "interests" in analysis and analysis["interests"]:
+            top = list(analysis["interests"].items())[:3]
+            parts.append("En çok ilgi: " + ", ".join(f"{t} ({s:.2f})" for t, s in top))
+        if "behavior" in analysis:
+            b = analysis["behavior"]
+            parts.append(
+                f"Tamamlanma oranı %{b['completion_rate']*100:.0f}, "
+                f"derin çalışma günde {b['deep_work_hours_per_day']} saat, "
+                f"bağlam değişimi günde {b['context_switching_per_day']}."
+            )
+        if "retrieved_entries" in analysis and analysis["retrieved_entries"]:
+            parts.append(f"{len(analysis['retrieved_entries'])} ilgili geçmiş kayıt bulundu.")
+        return " ".join(parts) or "Bunu cevaplamak için henüz yeterli veri yok."
+
     if "interests" in analysis and analysis["interests"]:
         top = list(analysis["interests"].items())[:3]
         parts.append("Top interests: " + ", ".join(f"{t} ({s:.2f})" for t, s in top))

@@ -1,13 +1,15 @@
 import { OnboardingStatus } from "../lib/api";
 import { Card } from "./ui/Card";
 import { cn } from "../lib/cn";
+import { useLang } from "./LangProvider";
 
 export default function OnboardingChecklist({ status }: { status: OnboardingStatus }) {
+  const { t } = useLang();
   if (status.all_done) return null;
 
   return (
     <Card>
-      <div className="text-sm font-semibold text-ink">Getting started</div>
+      <div className="text-sm font-semibold text-ink">{t("onboarding.gettingStarted")}</div>
       <div className="mt-3 space-y-1">
         {status.steps.map((step) => (
           <div key={step.key} className="flex items-center gap-2.5 py-1.5">

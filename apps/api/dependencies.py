@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
@@ -7,6 +7,14 @@ from src.database.models import User
 from src.services.auth_service import decode_access_token
 
 _bearer_scheme = HTTPBearer(auto_error=False)
+
+
+def get_lang(x_evolis_lang: str | None = Header(default=None)) -> str:
+    """Turkish UI mode (section: broader life tracking): the frontend sends
+    the user's chosen UI language on every request via X-Evolis-Lang (see
+    apps/frontend/lib/api.ts). Only "tr" is recognized; anything else, or
+    a missing header, is "en" — the same default as before this existed."""
+    return "tr" if x_evolis_lang == "tr" else "en"
 
 
 def get_current_user(

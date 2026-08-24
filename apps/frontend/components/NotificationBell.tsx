@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { api, Notification } from "../lib/api";
 import { Badge } from "./ui/Badge";
+import { useLang } from "./LangProvider";
 
 const CONFIDENCE_TONE: Record<string, "positive" | "negative" | "neutral" | "info"> = {
   high: "info",
@@ -15,6 +16,7 @@ const CONFIDENCE_TONE: Record<string, "positive" | "negative" | "neutral" | "inf
  * goal suggestions), so there's nothing to keep in sync and no read/unread
  * state to persist. See src/services/notification_service.py. */
 export default function NotificationBell() {
+  const { t } = useLang();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Notification[] | null>(null);
 
@@ -42,7 +44,7 @@ export default function NotificationBell() {
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div className="absolute left-0 top-11 z-20 w-80 rounded-2xl border border-line bg-card p-2 shadow-lg">
             {!items || items.length === 0 ? (
-              <div className="px-2 py-4 text-center text-xs text-muted">Nothing to flag right now.</div>
+              <div className="px-2 py-4 text-center text-xs text-muted">{t("notif.nothingToFlag")}</div>
             ) : (
               items.map((n, i) => (
                 <div key={i} className="rounded-xl px-2.5 py-2 hover:bg-surface">

@@ -11,9 +11,11 @@ import { Badge } from "../../../components/ui/Badge";
 import { MetricCard } from "../../../components/ui/MetricCard";
 import { PageHeader } from "../../../components/ui/PageHeader";
 import { EmptyState } from "../../../components/ui/EmptyState";
+import { useLang } from "../../../components/LangProvider";
 
 export default function ProjectDetailPage() {
   const ready = useRequireAuth();
+  const { t } = useLang();
   const params = useParams<{ id: string }>();
   const [detail, setDetail] = useState<ProjectDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -24,7 +26,7 @@ export default function ProjectDetailPage() {
     api
       .projectDetail(params.id)
       .then(setDetail)
-      .catch(() => setError("Project not found."))
+      .catch(() => setError(t("project.notFound")))
       .finally(() => setLoading(false));
   }, [ready, params.id]);
 
@@ -35,34 +37,34 @@ export default function ProjectDetailPage() {
   return (
     <AppShell>
       {loading ? (
-        <p className="text-sm text-muted">Loading...</p>
+        <p className="text-sm text-muted">{t("common.loading")}</p>
       ) : error || !detail ? (
-        <EmptyState icon="📁" title="Project not found" />
+        <EmptyState icon="📁" title={t("project.notFound")} />
       ) : (
         <>
-          <PageHeader title={detail.name} description={detail.description || "Auto-tracked from your daily entries."} />
+          <PageHeader title={detail.name} description={detail.description || t("project.autoTracked")} />
 
           {detail.technologies.length > 0 && (
             <div className="-mt-4 mb-6 flex flex-wrap gap-1.5">
-              {detail.technologies.map((t) => (
-                <Badge key={t}>{t}</Badge>
+              {detail.technologies.map((tech) => (
+                <Badge key={tech}>{tech}</Badge>
               ))}
             </div>
           )}
 
           <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3">
-            <MetricCard label="Active Days" value={detail.active_days} />
-            <MetricCard label="Sessions" value={detail.total_sessions} />
-            <MetricCard label="Focus Hours" value={`${detail.estimated_focus_hours}h`} />
+            <MetricCard label={t("project.activeDays")} value={detail.active_days} />
+            <MetricCard label={t("project.sessions")} value={detail.total_sessions} />
+            <MetricCard label={t("project.focusHours")} value={`${detail.estimated_focus_hours}h`} />
           </div>
 
           {detail.topics_touched.length > 0 && (
             <Card className="mb-6">
-              <div className="mb-2 text-sm font-semibold text-ink">Topics touched</div>
+              <div className="mb-2 text-sm font-semibold text-ink">{t("project.topicsTouched")}</div>
               <div className="flex flex-wrap gap-1.5">
-                {detail.topics_touched.map((t) => (
-                  <Badge key={t} tone="info">
-                    {t}
+                {detail.topics_touched.map((topic) => (
+                  <Badge key={topic} tone="info">
+                    {topic}
                   </Badge>
                 ))}
               </div>
@@ -71,7 +73,7 @@ export default function ProjectDetailPage() {
 
           {detail.focus_trend.length > 0 && (
             <Card className="mb-6">
-              <div className="mb-3 text-sm font-semibold text-ink">Focus trend</div>
+              <div className="mb-3 text-sm font-semibold text-ink">{t("project.focusTrend")}</div>
               <div className="flex items-end gap-2" style={{ height: 80 }}>
                 {detail.focus_trend.map((f) => (
                   <div key={f.week} className="flex flex-1 flex-col items-center gap-1">
@@ -87,9 +89,9 @@ export default function ProjectDetailPage() {
             </Card>
           )}
 
-          <div className="mb-3 text-sm font-semibold text-ink">Timeline</div>
+          <div className="mb-3 text-sm font-semibold text-ink">{t("project.timeline")}</div>
           {detail.timeline.length === 0 ? (
-            <EmptyState icon="🗓️" title="No entries yet" description="Mention this project in a daily entry to see it here." />
+            <EmptyState icon="🗓️" title={t("project.noEntriesYet")} description={t("project.mentionInEntry")} />
           ) : (
             <div className="space-y-3">
               {detail.timeline.map((row) => (

@@ -1,3 +1,5 @@
+import { getLang } from "./i18n";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const TOKEN_KEY = "evolis_token";
 
@@ -26,6 +28,11 @@ export async function apiFetch<T = unknown>(path: string, options: RequestInit =
   const token = getToken();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
+    // Turkish UI mode: every request carries the user's chosen language so
+    // backend-generated prose (dashboard insights, Ask Evolis answers,
+    // goal suggestions, ...) comes back already localized — see
+    // apps/api/dependencies.py's get_lang.
+    "X-Evolis-Lang": getLang(),
     ...(options.headers as Record<string, string> | undefined),
   };
   if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -49,7 +56,7 @@ export async function apiFetch<T = unknown>(path: string, options: RequestInit =
 
 export async function fetchSvg(path: string): Promise<string> {
   const token = getToken();
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = { "X-Evolis-Lang": getLang() };
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
   const res = await fetch(`${API_URL}${path}`, { headers });

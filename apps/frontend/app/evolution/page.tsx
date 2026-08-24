@@ -77,6 +77,7 @@ function EvolutionPageInner() {
 }
 
 function GenerateVersionForm({ onGenerated }: { onGenerated: (v: Version) => void }) {
+  const { t } = useLang();
   const [start, setStart] = useState(isoMonthsAgo(1));
   const [end, setEnd] = useState(new Date().toISOString().slice(0, 10));
   const [error, setError] = useState<string | null>(null);
@@ -91,7 +92,7 @@ function GenerateVersionForm({ onGenerated }: { onGenerated: (v: Version) => voi
       const versions = await api.listVersions();
       onGenerated(versions[versions.length - 1] ?? (result as unknown as Version));
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to generate version");
+      setError(err instanceof ApiError ? err.message : t("evolution.failedToGenerate"));
     } finally {
       setGenerating(false);
     }
@@ -101,15 +102,15 @@ function GenerateVersionForm({ onGenerated }: { onGenerated: (v: Version) => voi
     <Card>
       <form onSubmit={generate} className="flex flex-wrap items-end gap-3">
         <div className="min-w-[140px] flex-1">
-          <Label>Period start</Label>
+          <Label>{t("evolution.periodStart")}</Label>
           <Input type="date" value={start} onChange={(e) => setStart(e.target.value)} />
         </div>
         <div className="min-w-[140px] flex-1">
-          <Label>Period end</Label>
+          <Label>{t("evolution.periodEnd")}</Label>
           <Input type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
         </div>
         <Button type="submit" disabled={generating}>
-          {generating ? "Generating..." : "Generate New Version"}
+          {generating ? t("evolution.generating") : t("evolution.generateNew")}
         </Button>
       </form>
       {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
@@ -118,10 +119,11 @@ function GenerateVersionForm({ onGenerated }: { onGenerated: (v: Version) => voi
 }
 
 function CurrentVersionTab({ latest, onGenerated }: { latest: Version | undefined; onGenerated: (v: Version) => void }) {
+  const { t } = useLang();
   if (!latest) {
     return (
       <div className="space-y-6">
-        <EmptyState icon="📸" title="No versions yet" description="Generate your first version snapshot below." />
+        <EmptyState icon="📸" title={t("evolution.noVersionsYet")} description={t("evolution.generateFirst")} />
         <GenerateVersionForm onGenerated={onGenerated} />
       </div>
     );
@@ -144,6 +146,7 @@ function monthLabel(iso: string): string {
 }
 
 function VersionHistoryTab({ versions, onGenerated }: { versions: Version[]; onGenerated: (v: Version) => void }) {
+  const { t } = useLang();
   const [diffs, setDiffs] = useState<Record<string, DiffResult>>({});
 
   useEffect(() => {
@@ -170,7 +173,7 @@ function VersionHistoryTab({ versions, onGenerated }: { versions: Version[]; onG
     <div className="space-y-6">
       <GenerateVersionForm onGenerated={onGenerated} />
       {versions.length === 0 ? (
-        <EmptyState title="No versions yet" description="Generate one above to start your version history." />
+        <EmptyState title={t("evolution.noVersionsYet")} description={t("evolution.generateOneAbove")} />
       ) : (
         <>
           {versions.length >= 2 && (
@@ -201,7 +204,7 @@ function VersionHistoryTab({ versions, onGenerated }: { versions: Version[]; onG
                       <div className="text-xs text-muted">{monthLabel(v.period_start)}</div>
                     </div>
                     <Link href={`/evolution?tab=compare`} className="text-sm font-semibold text-brand-emerald hover:underline">
-                      View →
+                      {t("evolution.view")}
                     </Link>
                   </div>
 
@@ -209,11 +212,11 @@ function VersionHistoryTab({ versions, onGenerated }: { versions: Version[]; onG
                     <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                       {d.added_topics.length > 0 && (
                         <div>
-                          <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">New</div>
+                          <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">{t("evolution.new")}</div>
                           <div className="flex flex-wrap gap-1.5">
-                            {d.added_topics.slice(0, 4).map((t) => (
-                              <Badge key={t} tone="positive">
-                                + {t}
+                            {d.added_topics.slice(0, 4).map((topic) => (
+                              <Badge key={topic} tone="positive">
+                                + {topic}
                               </Badge>
                             ))}
                           </div>
@@ -221,8 +224,10 @@ function VersionHistoryTab({ versions, onGenerated }: { versions: Version[]; onG
                       )}
                       {d.completion_change !== null && d.completion_change > 0 && (
                         <div>
-                          <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">Improved</div>
-                          <Badge tone="positive">Completion +{Math.round(d.completion_change * 100)}%</Badge>
+                          <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">{t("evolution.improved")}</div>
+                          <Badge tone="positive">
+                            {t("evolution.completion")} +{Math.round(d.completion_change * 100)}%
+                          </Badge>
                         </div>
                       )}
                     </div>
@@ -238,6 +243,7 @@ function VersionHistoryTab({ versions, onGenerated }: { versions: Version[]; onG
 }
 
 function CompareTab({ versions }: { versions: Version[] }) {
+  const { t } = useLang();
   const [base, setBase] = useState(versions[0]?.label ?? "");
   const [target, setTarget] = useState(versions[versions.length - 1]?.label ?? "");
   const [diff, setDiff] = useState<DiffResult | null>(null);
@@ -258,7 +264,7 @@ function CompareTab({ versions }: { versions: Version[] }) {
     try {
       setDiff(await api.diff(base, target));
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to compute diff");
+      setError(err instanceof ApiError ? err.message : t("evolution.failedToCompute"));
       setDiff(null);
     } finally {
       setLoading(false);
@@ -266,7 +272,7 @@ function CompareTab({ versions }: { versions: Version[] }) {
   }
 
   if (versions.length < 2) {
-    return <EmptyState icon="🔀" title="Need two versions to compare" description="Generate a second version in Version History first." />;
+    return <EmptyState icon="🔀" title={t("evolution.needTwoToCompare")} description={t("evolution.generateSecondInHistory")} />;
   }
 
   return (
@@ -274,7 +280,7 @@ function CompareTab({ versions }: { versions: Version[] }) {
       <Card>
         <form onSubmit={runDiff} className="flex flex-wrap items-end gap-3">
           <div>
-            <Label>Base</Label>
+            <Label>{t("evolution.base")}</Label>
             <select
               className="rounded-xl border border-line bg-card px-3 py-2.5 text-sm"
               value={base}
@@ -289,7 +295,7 @@ function CompareTab({ versions }: { versions: Version[] }) {
           </div>
           <span className="pb-2.5 text-muted">→</span>
           <div>
-            <Label>Target</Label>
+            <Label>{t("evolution.target")}</Label>
             <select
               className="rounded-xl border border-line bg-card px-3 py-2.5 text-sm"
               value={target}
@@ -303,7 +309,7 @@ function CompareTab({ versions }: { versions: Version[] }) {
             </select>
           </div>
           <Button type="submit" disabled={loading}>
-            {loading ? "Comparing..." : "Compare"}
+            {loading ? t("evolution.comparing") : t("evolution.compare")}
           </Button>
         </form>
         {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
@@ -315,15 +321,15 @@ function CompareTab({ versions }: { versions: Version[] }) {
             YOU v{diff.base} → YOU v{diff.target}
           </div>
 
-          <DiffSection title="Added" tone="positive" prefix="+" topics={diff.added_topics} domainOf={diff.topic_domains} />
-          <DiffSection title="Emerging Interest" tone="info" prefix="→" topics={diff.emerging_topics} domainOf={diff.topic_domains} />
+          <DiffSection title={t("evolution.added")} tone="positive" prefix="+" topics={diff.added_topics} domainOf={diff.topic_domains} />
+          <DiffSection title={t("evolution.emergingInterest")} tone="info" prefix="→" topics={diff.emerging_topics} domainOf={diff.topic_domains} />
 
           <Card>
-            <div className="mb-3 text-sm font-semibold text-ink">Behavior</div>
+            <div className="mb-3 text-sm font-semibold text-ink">{t("evolution.behavior")}</div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <BehaviorMetric label="Deep Work" before={diff.deep_work_before} after={diff.deep_work_after} unit="h" changePct={diff.deep_work_change} higherIsBetter />
+              <BehaviorMetric label={t("evolution.deepWork")} before={diff.deep_work_before} after={diff.deep_work_after} unit="h" changePct={diff.deep_work_change} higherIsBetter />
               <BehaviorMetric
-                label="Completion"
+                label={t("evolution.completion")}
                 before={diff.completion_before !== null ? diff.completion_before * 100 : null}
                 after={diff.completion_after !== null ? diff.completion_after * 100 : null}
                 unit="%"
@@ -331,7 +337,7 @@ function CompareTab({ versions }: { versions: Version[] }) {
                 higherIsBetter
               />
               <BehaviorMetric
-                label="Context Switching"
+                label={t("evolution.contextSwitching")}
                 before={diff.context_switching_before}
                 after={diff.context_switching_after}
                 unit="/day"
@@ -345,12 +351,12 @@ function CompareTab({ versions }: { versions: Version[] }) {
             </div>
           </Card>
 
-          <DiffSection title="Declining" tone="negative" prefix="↓" topics={diff.declining_topics} domainOf={diff.topic_domains} />
-          <DiffSection title="Dormant" tone="neutral" prefix="-" topics={diff.dormant_topics} domainOf={diff.topic_domains} />
+          <DiffSection title={t("evolution.declining")} tone="negative" prefix="↓" topics={diff.declining_topics} domainOf={diff.topic_domains} />
+          <DiffSection title={t("evolution.dormant")} tone="neutral" prefix="-" topics={diff.dormant_topics} domainOf={diff.topic_domains} />
 
           {Object.keys(diff.skill_changes).length > 0 && (
             <Card>
-              <div className="mb-2 text-sm font-semibold text-ink">Skills</div>
+              <div className="mb-2 text-sm font-semibold text-ink">{t("evolution.skills")}</div>
               {Object.entries(diff.skill_changes).map(([skill, change]) => (
                 <div key={skill} className="text-sm text-ink">
                   {skill}: {change.before} → {change.after} ({change.change >= 0 ? "+" : ""}
@@ -419,11 +425,12 @@ function DiffSection({
   topics: string[];
   domainOf: Record<string, string>;
 }) {
+  const { t } = useLang();
   if (topics.length === 0) return null;
 
   const byDomain: Record<string, string[]> = {};
   for (const topic of topics) {
-    const domain = domainOf[topic] ?? "Skills";
+    const domain = domainOf[topic] ?? t("evolution.skills");
     (byDomain[domain] ??= []).push(topic);
   }
 
@@ -447,6 +454,7 @@ function DiffSection({
 }
 
 function ReleaseNotesTab({ versions }: { versions: Version[] }) {
+  const { t } = useLang();
   const [base, setBase] = useState(versions[0]?.label ?? "");
   const [target, setTarget] = useState(versions[versions.length - 1]?.label ?? "");
   const [text, setText] = useState<string | null>(null);
@@ -479,7 +487,7 @@ function ReleaseNotesTab({ versions }: { versions: Version[] }) {
   }
 
   if (versions.length < 2) {
-    return <EmptyState icon="📝" title="Need two versions" description="Generate a second version to get release notes." />;
+    return <EmptyState icon="📝" title={t("evolution.needTwoForNotes")} description={t("evolution.generateSecondForNotes")} />;
   }
 
   return (
@@ -487,7 +495,7 @@ function ReleaseNotesTab({ versions }: { versions: Version[] }) {
       <Card>
         <div className="flex flex-wrap items-end gap-3">
           <div>
-            <Label>Base</Label>
+            <Label>{t("evolution.base")}</Label>
             <select className="rounded-xl border border-line bg-card px-3 py-2.5 text-sm" value={base} onChange={(e) => setBase(e.target.value)}>
               {versions.map((v) => (
                 <option key={v.id} value={v.label}>
@@ -498,7 +506,7 @@ function ReleaseNotesTab({ versions }: { versions: Version[] }) {
           </div>
           <span className="pb-2.5 text-muted">→</span>
           <div>
-            <Label>Target</Label>
+            <Label>{t("evolution.target")}</Label>
             <select className="rounded-xl border border-line bg-card px-3 py-2.5 text-sm" value={target} onChange={(e) => setTarget(e.target.value)}>
               {versions.map((v) => (
                 <option key={v.id} value={v.label}>
@@ -508,10 +516,10 @@ function ReleaseNotesTab({ versions }: { versions: Version[] }) {
             </select>
           </div>
           <Button variant="secondary" onClick={loadNotes} type="button">
-            Load Release Notes
+            {t("evolution.loadReleaseNotes")}
           </Button>
           <Button variant="secondary" onClick={loadCard} type="button">
-            Share Card
+            {t("evolution.shareCard")}
           </Button>
         </div>
       </Card>
@@ -526,7 +534,7 @@ function ReleaseNotesTab({ versions }: { versions: Version[] }) {
         <Card>
           <div dangerouslySetInnerHTML={{ __html: svg }} />
           <Button className="mt-3" onClick={downloadCard}>
-            Download
+            {t("evolution.download")}
           </Button>
         </Card>
       )}

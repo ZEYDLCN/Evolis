@@ -10,6 +10,7 @@ import { Badge } from "../../../components/ui/Badge";
 import { MetricCard } from "../../../components/ui/MetricCard";
 import { PageHeader } from "../../../components/ui/PageHeader";
 import { EmptyState } from "../../../components/ui/EmptyState";
+import { useLang } from "../../../components/LangProvider";
 
 const STATUS_TONE: Record<string, "positive" | "negative" | "neutral"> = {
   done: "positive",
@@ -20,6 +21,7 @@ const STATUS_TONE: Record<string, "positive" | "negative" | "neutral"> = {
 
 export default function DayDetailPage() {
   const ready = useRequireAuth();
+  const { t } = useLang();
   const params = useParams<{ date: string }>();
   const [detail, setDetail] = useState<DayDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -44,23 +46,23 @@ export default function DayDetailPage() {
 
   return (
     <AppShell>
-      <PageHeader title={dateLabel} description="Everything you logged on this day." />
+      <PageHeader title={dateLabel} description={t("day.description")} />
 
       {loading ? (
-        <p className="text-sm text-muted">Loading...</p>
+        <p className="text-sm text-muted">{t("common.loading")}</p>
       ) : !detail || detail.entry_count === 0 ? (
-        <EmptyState icon="🗓️" title="No entries this day" />
+        <EmptyState icon="🗓️" title={t("day.noEntries")} />
       ) : (
         <>
           <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3">
-            <MetricCard label="Entries" value={detail.entry_count} />
-            <MetricCard label="Focused Minutes" value={detail.focused_minutes} />
-            <MetricCard label="Topics" value={Object.keys(detail.topic_breakdown).length} />
+            <MetricCard label={t("day.entries")} value={detail.entry_count} />
+            <MetricCard label={t("day.focusedMinutes")} value={detail.focused_minutes} />
+            <MetricCard label={t("day.topics")} value={Object.keys(detail.topic_breakdown).length} />
           </div>
 
           {Object.keys(detail.topic_breakdown).length > 0 && (
             <Card className="mb-6">
-              <div className="mb-2 text-sm font-semibold text-ink">Time by topic</div>
+              <div className="mb-2 text-sm font-semibold text-ink">{t("day.timeByTopic")}</div>
               <div className="space-y-2">
                 {Object.entries(detail.topic_breakdown).map(([topic, minutes]) => (
                   <div key={topic} className="flex items-center justify-between text-sm">
@@ -72,7 +74,7 @@ export default function DayDetailPage() {
             </Card>
           )}
 
-          <div className="mb-3 text-sm font-semibold text-ink">Entries</div>
+          <div className="mb-3 text-sm font-semibold text-ink">{t("day.entriesHeading")}</div>
           <div className="space-y-3">
             {detail.entries.map((e) => (
               <Card key={e.id}>
@@ -82,13 +84,15 @@ export default function DayDetailPage() {
                 <p className="text-sm text-ink">{e.text}</p>
                 {e.topics.length > 0 && (
                   <div className="mt-2.5 flex flex-wrap gap-1.5">
-                    {e.topics.map((t) => (
-                      <Badge key={t}>{t}</Badge>
+                    {e.topics.map((topic) => (
+                      <Badge key={topic}>{topic}</Badge>
                     ))}
                   </div>
                 )}
                 {e.blockers.length > 0 && (
-                  <div className="mt-2 text-xs text-red-600">Blocked: {e.blockers.join(", ")}</div>
+                  <div className="mt-2 text-xs text-red-600">
+                    {t("day.blocked")} {e.blockers.join(", ")}
+                  </div>
                 )}
               </Card>
             ))}

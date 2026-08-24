@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from apps.api.dependencies import get_current_user
+from apps.api.dependencies import get_current_user, get_lang
 from src.database.base import get_db
 from src.database.models import User
 from src.services.goal_service import complete_goal, create_goal, delete_goal, goals_with_progress, suggest_goals
@@ -42,8 +42,10 @@ def get_goals(user: User = Depends(get_current_user), db: Session = Depends(get_
 
 
 @router.get("/suggestions")
-def get_goal_suggestions(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[dict]:
-    return suggest_goals(db, user.id)
+def get_goal_suggestions(
+    user: User = Depends(get_current_user), db: Session = Depends(get_db), lang: str = Depends(get_lang)
+) -> list[dict]:
+    return suggest_goals(db, user.id, lang=lang)
 
 
 @router.post("/{goal_id}/complete")

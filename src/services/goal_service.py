@@ -113,7 +113,11 @@ def goals_with_progress(db: Session, user_id: str, now: dt.datetime | None = Non
     return out
 
 
-def suggest_goals(db: Session, user_id: str, now: dt.datetime | None = None) -> list[dict]:
+def _gt(lang: str, en: str, tr: str) -> str:
+    return tr if lang == "tr" else en
+
+
+def suggest_goals(db: Session, user_id: str, now: dt.datetime | None = None, lang: str = "en") -> list[dict]:
     """Rule-based candidate goals. Pure read — nothing is persisted here."""
     now = now or dt.datetime.utcnow()
     window_start = now - dt.timedelta(days=WINDOW_DAYS)
@@ -124,8 +128,16 @@ def suggest_goals(db: Session, user_id: str, now: dt.datetime | None = None) -> 
     if behavior["created"] >= 3 and behavior["completion_rate"] < COMPLETION_TARGET:
         suggestions.append(
             {
-                "title": f"Raise task completion rate to {int(COMPLETION_TARGET * 100)}%",
-                "description": f"You're at {round(behavior['completion_rate'] * 100)}% over the last {WINDOW_DAYS} days.",
+                "title": _gt(
+                    lang,
+                    f"Raise task completion rate to {int(COMPLETION_TARGET * 100)}%",
+                    f"Görev tamamlanma oranını %{int(COMPLETION_TARGET * 100)}'e çıkar",
+                ),
+                "description": _gt(
+                    lang,
+                    f"You're at {round(behavior['completion_rate'] * 100)}% over the last {WINDOW_DAYS} days.",
+                    f"Son {WINDOW_DAYS} günde %{round(behavior['completion_rate'] * 100)} durumundasın.",
+                ),
                 "metric_key": "completion_rate",
                 "target_value": COMPLETION_TARGET,
                 "reason": "completion_below_target",
@@ -136,8 +148,16 @@ def suggest_goals(db: Session, user_id: str, now: dt.datetime | None = None) -> 
     if behavior["deep_work_hours_per_day"] < DEEP_WORK_TARGET_HOURS:
         suggestions.append(
             {
-                "title": f"Reach {DEEP_WORK_TARGET_HOURS:.0f}h of deep work per day",
-                "description": f"Currently averaging {behavior['deep_work_hours_per_day']}h/day over the last {WINDOW_DAYS} days.",
+                "title": _gt(
+                    lang,
+                    f"Reach {DEEP_WORK_TARGET_HOURS:.0f}h of deep work per day",
+                    f"Günde {DEEP_WORK_TARGET_HOURS:.0f} saat derin çalışmaya ulaş",
+                ),
+                "description": _gt(
+                    lang,
+                    f"Currently averaging {behavior['deep_work_hours_per_day']}h/day over the last {WINDOW_DAYS} days.",
+                    f"Son {WINDOW_DAYS} günde günde ortalama {behavior['deep_work_hours_per_day']} saat.",
+                ),
                 "metric_key": "deep_work_hours_per_day",
                 "target_value": DEEP_WORK_TARGET_HOURS,
                 "reason": "deep_work_below_target",
@@ -149,8 +169,10 @@ def suggest_goals(db: Session, user_id: str, now: dt.datetime | None = None) -> 
     if streak.current_streak < STREAK_TARGET_DAYS:
         suggestions.append(
             {
-                "title": f"Build a {STREAK_TARGET_DAYS}-day entry streak",
-                "description": f"Current streak: {streak.current_streak} day(s).",
+                "title": _gt(lang, f"Build a {STREAK_TARGET_DAYS}-day entry streak", f"{STREAK_TARGET_DAYS} günlük kayıt serisi oluştur"),
+                "description": _gt(
+                    lang, f"Current streak: {streak.current_streak} day(s).", f"Mevcut seri: {streak.current_streak} gün."
+                ),
                 "metric_key": None,
                 "target_value": None,
                 "reason": "streak_below_target",
@@ -166,8 +188,12 @@ def suggest_goals(db: Session, user_id: str, now: dt.datetime | None = None) -> 
         if early_score - late_score >= DECLINE_THRESHOLD:
             suggestions.append(
                 {
-                    "title": f"Re-engage with {topic}",
-                    "description": f"{topic} interest dropped from {round(early_score * 100)}% to {round(late_score * 100)}% this month.",
+                    "title": _gt(lang, f"Re-engage with {topic}", f"{topic} ile yeniden ilgilen"),
+                    "description": _gt(
+                        lang,
+                        f"{topic} interest dropped from {round(early_score * 100)}% to {round(late_score * 100)}% this month.",
+                        f"{topic} ilgisi bu ay %{round(early_score * 100)}'den %{round(late_score * 100)}'e düştü.",
+                    ),
                     "metric_key": None,
                     "target_value": None,
                     "reason": "declining_topic",

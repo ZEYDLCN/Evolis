@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from src.extraction.domains import DOMAIN_LABELS, classify_domain
+from src.extraction.domains import classify_domain, domain_label
 
 NEW_TOPIC_THRESHOLD = 0.15  # below this in the base version, above it in the target -> "added"
 DECLINE_THRESHOLD = -0.20  # relative change below this -> "declining"
@@ -70,7 +70,7 @@ def _relative_change(before: float, after: float) -> float:
     return (after - before) / before
 
 
-def diff_versions(base_metrics: dict, target_metrics: dict) -> VersionDiff:
+def diff_versions(base_metrics: dict, target_metrics: dict, lang: str = "en") -> VersionDiff:
     base_topics: dict = base_metrics.get("topic_scores", {}) or {}
     target_topics: dict = target_metrics.get("topic_scores", {}) or {}
 
@@ -81,7 +81,7 @@ def diff_versions(base_metrics: dict, target_metrics: dict) -> VersionDiff:
         before = base_topics.get(topic, 0.0)
         after = target_topics.get(topic, 0.0)
         diff.topic_score_changes[topic] = round(after - before, 4)
-        diff.topic_domains[topic] = DOMAIN_LABELS[classify_domain(topic)]
+        diff.topic_domains[topic] = domain_label(classify_domain(topic), lang)
 
         if topic not in base_topics and after >= NEW_TOPIC_THRESHOLD:
             diff.added_topics.append(topic)

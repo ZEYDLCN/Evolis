@@ -4,18 +4,20 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, SearchResults } from "../lib/api";
 import { getToken } from "../lib/api";
+import { useLang } from "./LangProvider";
 
 /** Global Cmd+K / Ctrl+K search across entries, projects, topics, skills,
  * and versions (section 14). Purely a navigation shortcut — no LLM, no
  * ranking beyond what src/services/search_service.py already returns. */
-const DAY_FILTERS: { label: string; days: number | undefined }[] = [
-  { label: "All time", days: undefined },
-  { label: "7 days", days: 7 },
-  { label: "30 days", days: 30 },
+const DAY_FILTER_KEYS: { key: string; days: number | undefined }[] = [
+  { key: "palette.allTime", days: undefined },
+  { key: "palette.days7", days: 7 },
+  { key: "palette.days30", days: 30 },
 ];
 
 export default function CommandPalette() {
   const router = useRouter();
+  const { t } = useLang();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [days, setDays] = useState<number | undefined>(undefined);
@@ -78,31 +80,33 @@ export default function CommandPalette() {
           ref={inputRef}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search entries, projects, topics, skills..."
+          placeholder={t("palette.searchPlaceholder")}
           className="w-full rounded-t-2xl border-b border-line bg-transparent px-4 py-3.5 text-sm text-ink placeholder:text-muted focus:outline-none"
         />
         <div className="flex gap-1.5 border-b border-line px-3 py-2">
-          {DAY_FILTERS.map((f) => (
+          {DAY_FILTER_KEYS.map((f) => (
             <button
-              key={f.label}
+              key={f.key}
               onClick={() => setDays(f.days)}
               className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
                 days === f.days ? "bg-brand-emerald text-white" : "bg-surface text-muted hover:text-ink"
               }`}
             >
-              {f.label}
+              {t(f.key)}
             </button>
           ))}
         </div>
         <div className="max-h-96 overflow-y-auto p-2">
-          {!query.trim() && <div className="px-2 py-4 text-center text-xs text-muted">Type to search, Esc to close.</div>}
-          {loading && <div className="px-2 py-4 text-center text-xs text-muted">Searching...</div>}
+          {!query.trim() && <div className="px-2 py-4 text-center text-xs text-muted">{t("palette.typeToSearch")}</div>}
+          {loading && <div className="px-2 py-4 text-center text-xs text-muted">{t("palette.searching")}</div>}
           {results && !loading && !hasResults && query.trim() && (
-            <div className="px-2 py-4 text-center text-xs text-muted">No results for "{query}"</div>
+            <div className="px-2 py-4 text-center text-xs text-muted">
+              {t("palette.noResultsFor")} "{query}"
+            </div>
           )}
 
           {results && results.projects.length > 0 && (
-            <Section title="Projects">
+            <Section title={t("palette.projects")}>
               {results.projects.map((p) => (
                 <Row key={p.id} onClick={() => go(`/projects/${p.id}`)}>
                   📁 {p.name}
@@ -112,7 +116,7 @@ export default function CommandPalette() {
           )}
 
           {results && results.entries.length > 0 && (
-            <Section title="Entries">
+            <Section title={t("palette.entries")}>
               {results.entries.map((e) => (
                 <Row key={e.id} onClick={() => go(`/day/${e.date}`)}>
                   <span className="text-muted">{e.date}</span> — {e.snippet}
@@ -122,17 +126,17 @@ export default function CommandPalette() {
           )}
 
           {results && results.topics.length > 0 && (
-            <Section title="Topics">
-              {results.topics.map((t) => (
-                <Row key={t} onClick={() => go(`/timeline`)}>
-                  🏷️ {t}
+            <Section title={t("palette.topics")}>
+              {results.topics.map((topic) => (
+                <Row key={topic} onClick={() => go(`/timeline`)}>
+                  🏷️ {topic}
                 </Row>
               ))}
             </Section>
           )}
 
           {results && results.skills.length > 0 && (
-            <Section title="Skills">
+            <Section title={t("palette.skills")}>
               {results.skills.map((s) => (
                 <Row key={s.id} onClick={() => go(`/insights`)}>
                   🧠 {s.name}
@@ -142,7 +146,7 @@ export default function CommandPalette() {
           )}
 
           {results && results.versions.length > 0 && (
-            <Section title="Versions">
+            <Section title={t("palette.versions")}>
               {results.versions.map((v) => (
                 <Row key={v.id} onClick={() => go(`/evolution?tab=history`)}>
                   🏷️ {v.label}

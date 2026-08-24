@@ -23,13 +23,20 @@ MID_GREEN = "#4AAE70"
 MUTED_GREEN = "#5C7A6C"
 BORDER_TINT = "#DCEDE3"
 
+# Canonical (English) section keys drive color lookup; display titles are
+# localized separately below so Turkish UI mode doesn't need its own color map.
 _SECTION_COLORS = {
-    "Added": EMERALD,
-    "Improved": EMERALD,
-    "Declining Focus": "#b26a00",  # kept warm/amber on purpose — a status color, not a brand color
-    "Deprecated": MUTED_GREEN,
-    "Emerging Interest": MID_GREEN,
-    "Known Issues": "#c62828",  # kept red on purpose — an alert, not a brand color
+    "added": EMERALD,
+    "improved": EMERALD,
+    "declining": "#b26a00",  # kept warm/amber on purpose — a status color, not a brand color
+    "deprecated": MUTED_GREEN,
+    "emerging": MID_GREEN,
+    "known_issues": "#c62828",  # kept red on purpose — an alert, not a brand color
+}
+
+_SECTION_TITLES = {
+    "en": {"added": "Added", "improved": "Improved", "declining": "Declining Focus", "deprecated": "Deprecated", "emerging": "Emerging Interest", "known_issues": "Known Issues"},
+    "tr": {"added": "Eklenen", "improved": "İyileşen", "declining": "Azalan Odak", "deprecated": "Bırakılan", "emerging": "Yükselen İlgi", "known_issues": "Dikkat Edilecekler"},
 }
 
 
@@ -37,25 +44,27 @@ def _escape(text: str) -> str:
     return html.escape(text, quote=True)
 
 
-def _build_lines(notes: dict) -> list[tuple[str, str]]:
+def _build_lines(notes: dict, lang: str = "en") -> list[tuple[str, str]]:
     """Returns (text, color) pairs for every line below the title, reusing
     the same sectioning render_release_notes() already computed."""
     lines: list[tuple[str, str]] = []
+    titles = _SECTION_TITLES["tr" if lang == "tr" else "en"]
 
-    def add_section(title: str, items: list[str]):
+    def add_section(key: str, items: list[str]):
         if not items:
             return
+        title = titles[key]
         lines.append((title, DEEP_FOREST))
         for item in items:
-            lines.append((item, _SECTION_COLORS.get(title, DEEP_FOREST)))
+            lines.append((item, _SECTION_COLORS.get(key, DEEP_FOREST)))
         lines.append(("", "#000000"))  # spacer
 
-    add_section("Added", [f"+ {t}" for t in notes["added"]])
-    add_section("Improved", notes["improved"])
-    add_section("Declining Focus", [f"- {t}" for t in notes["declining"]])
-    add_section("Deprecated", [f"- {t}" for t in notes["deprecated"]])
-    add_section("Emerging Interest", [f"→ {t}" for t in notes["emerging"]])
-    add_section("Known Issues", notes["known_issues"])
+    add_section("added", [f"+ {t}" for t in notes["added"]])
+    add_section("improved", notes["improved"])
+    add_section("declining", [f"- {t}" for t in notes["declining"]])
+    add_section("deprecated", [f"- {t}" for t in notes["deprecated"]])
+    add_section("emerging", [f"→ {t}" for t in notes["emerging"]])
+    add_section("known_issues", notes["known_issues"])
 
     if lines and lines[-1] == ("", "#000000"):
         lines.pop()
@@ -63,16 +72,17 @@ def _build_lines(notes: dict) -> list[tuple[str, str]]:
     return lines
 
 
-def render_release_notes_svg(notes: dict) -> str:
+def render_release_notes_svg(notes: dict, lang: str = "en") -> str:
     """notes = the dict returned by src.versions.release_notes.render_release_notes()."""
-    lines = _build_lines(notes)
+    lines = _build_lines(notes, lang)
     height = HEADER_HEIGHT + PADDING + max(len(lines), 1) * LINE_HEIGHT + PADDING
+    section_titles = set(_SECTION_TITLES["tr" if lang == "tr" else "en"].values())
 
     body_lines = []
     y = HEADER_HEIGHT + PADDING
     for text, color in lines:
         if text:
-            weight = "600" if text in {"Added", "Improved", "Declining Focus", "Deprecated", "Emerging Interest", "Known Issues"} else "400"
+            weight = "600" if text in section_titles else "400"
             body_lines.append(
                 f'<text x="{PADDING}" y="{y}" font-family="ui-monospace, Menlo, monospace" '
                 f'font-size="16" font-weight="{weight}" fill="{color}">{_escape(text)}</text>'

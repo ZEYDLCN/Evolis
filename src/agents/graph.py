@@ -30,6 +30,7 @@ class AskState(TypedDict, total=False):
     db: Session
     user_id: str
     question: str
+    lang: str
     query_class: QueryClass
     plan: QueryPlan
     analysis: dict
@@ -56,7 +57,7 @@ def _explain_node(state: AskState) -> dict:
     # orchestrator's wording functions.
     from src.agents.orchestrator import _explain
 
-    return {"answer": _explain(state["question"], state["analysis"])}
+    return {"answer": _explain(state["question"], state["analysis"], state.get("lang", "en"))}
 
 
 def _verify_node(state: AskState) -> dict:
@@ -66,7 +67,7 @@ def _verify_node(state: AskState) -> dict:
         return {"grounded": True}
     # Ungrounded — fall back to the deterministic, always-grounded template
     # rather than surfacing a number the LLM made up.
-    return {"answer": _template_explain(state["analysis"]), "grounded": True}
+    return {"answer": _template_explain(state["analysis"], state.get("lang", "en")), "grounded": True}
 
 
 def _build_graph() -> Any:
@@ -97,11 +98,30 @@ def get_compiled_graph() -> Any:
     return _compiled
 
 
-def _build_tool_trace(result: AskState) -> list[dict]:
+def _build_tool_trace(result: AskState, lang: str = "en") -> list[dict]:
     """Tool Transparency (section 45): what the graph actually did, in
     plain language — which tools ran and why — so "Ask Evolis" never
     feels like a black box even though the wording is LLM-generated."""
     plan = result["plan"]
+    if lang == "tr":
+        trace = [
+            {"step": "classify", "detail": f'"{result["query_class"]}" olarak sınıflandırıldı.'},
+            {
+                "step": "plan",
+                "detail": f"{plan.start.date().isoformat()} → {plan.end.date().isoformat()} aralığına bakılıyor"
+                + (", SQL analitiği kullanılarak" if plan.use_sql else "")
+                + (" ve geçmiş kayıtlar üzerinde vektör araması yapılarak" if plan.use_vector_search else "") + ".",
+            },
+            {"step": "analyze", "detail": f'{len(result["analysis"])} analitik alan hesaplandı — hiçbir sayı tahmin edilmedi.'},
+            {"step": "explain", "detail": "LLM, hesaplanan sayıları düz yazıya döktü."},
+            {
+                "step": "verify",
+                "detail": "Cevaptaki sayılar analizle karşılaştırıldı"
+                + ("." if result.get("grounded", True) else " — bir sayı uyuşmadığı için şablon cevaba geri dönüldü."),
+            },
+        ]
+        return trace
+
     trace = [
         {"step": "classify", "detail": f'Classified as "{result["query_class"]}".'},
         {
@@ -120,14 +140,14 @@ def _build_tool_trace(result: AskState) -> list[dict]:
     return trace
 
 
-def run_ask_graph(db: Session, user_id: str, question: str) -> dict:
-    result = get_compiled_graph().invoke({"db": db, "user_id": user_id, "question": question})
+def run_ask_graph(db: Session, user_id: str, question: str, lang: str = "en") -> dict:
+    result = get_compiled_graph().invoke({"db": db, "user_id": user_id, "question": question, "lang": lang})
     return {
         "question": question,
         "query_class": result["query_class"],
         "analysis": result["analysis"],
         "answer": result["answer"],
         "grounded": result.get("grounded", True),
-        "evidence": build_evidence(result["analysis"]),
-        "tool_trace": _build_tool_trace(result),
+        "evidence": build_evidence(result["analysis"], lang),
+        "tool_trace": _build_tool_trace(result, lang),
     }

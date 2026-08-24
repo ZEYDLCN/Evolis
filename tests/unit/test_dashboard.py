@@ -86,3 +86,31 @@ def test_current_version_card_shows_growth_between_versions():
     assert summary.current_version["label"] == "1.1"
     assert summary.current_version["strongest_growth"]["topic"] == "RAG"
     assert summary.current_version["has_previous_version"] is True
+
+
+def test_turkish_lang_localizes_onboarding_headline():
+    db = _make_session()
+    user = User(email="tr@b.com", hashed_password="x")
+    db.add(user)
+    db.commit()
+
+    summary = build_dashboard_summary(db, user.id, display_name="Ada", lang="tr")
+
+    assert summary.onboarding_gate is True
+    assert "Birkaç gün daha" in summary.hero_headline
+
+
+def test_turkish_lang_localizes_weekly_evolution_labels():
+    db = _make_session()
+    user = User(email="tr2@b.com", hashed_password="x")
+    db.add(user)
+    db.flush()
+    for i in range(3):
+        _entry(db, user.id, dt.date(2026, 8, 20) + dt.timedelta(days=i), "RAG")
+
+    summary = build_dashboard_summary(db, user.id, display_name=None, now=dt.datetime(2026, 8, 24), lang="tr")
+
+    labels = {row["label"] for row in summary.weekly_evolution}
+    assert "Derin Çalışma" in labels
+    assert "Tamamlanma" in labels
+    assert "Bağlam Değişimi" in labels

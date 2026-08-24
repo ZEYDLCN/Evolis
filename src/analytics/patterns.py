@@ -42,14 +42,23 @@ class PatternFinding:
             return "medium"
         return "low"
 
-    @property
-    def description(self) -> str:
-        direction = "yükseldiği dönemlerde" if self.correlation > 0 else "düştüğü dönemlerde"
-        other_direction = "yükseliyor" if self.correlation > 0 else "düşüyor"
+    def description(self, lang: str = "en") -> str:
+        if lang == "tr":
+            direction = "yükseldiği dönemlerde" if self.correlation > 0 else "düştüğü dönemlerde"
+            other_direction = "yükseliyor" if self.correlation > 0 else "düşüyor"
+            metric_a_tr = "Aktif proje sayısının" if self.metric_a == "active project count" else self.metric_a
+            metric_b_tr = "completion rate" if self.metric_b == "completion rate" else self.metric_b
+            return (
+                f"{metric_a_tr} {direction} {metric_b_tr} genellikle {other_direction} "
+                f"gözlemleniyor (korelasyon: {self.correlation:.2f}, {self.weeks_observed} hafta üzerinden). "
+                "Bu bir neden-sonuç iddiası değil, birlikte-görülme (association) gözlemidir."
+            )
+        direction = "rises" if self.correlation > 0 else "falls"
+        other_direction = "rises" if self.correlation > 0 else "falls"
         return (
-            f"{self.metric_a} {direction} {self.metric_b} genellikle {other_direction} "
-            f"gözlemleniyor (korelasyon: {self.correlation:.2f}, {self.weeks_observed} hafta üzerinden). "
-            "Bu bir neden-sonuç iddiası değil, birlikte-görülme (association) gözlemidir."
+            f"When {self.metric_a} {direction}, {self.metric_b} usually {other_direction} too "
+            f"(correlation: {self.correlation:.2f}, over {self.weeks_observed} weeks). "
+            "This is an association, not a cause-and-effect claim."
         )
 
 
@@ -85,7 +94,7 @@ def detect_project_load_vs_completion(db: Session, user_id: str, now: dt.datetim
         return None
 
     return PatternFinding(
-        metric_a="Aktif proje sayısının",
+        metric_a="active project count",
         metric_b="completion rate",
         correlation=round(r, 3),
         weeks_observed=len(project_counts),
