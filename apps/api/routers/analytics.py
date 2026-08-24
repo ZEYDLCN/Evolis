@@ -13,6 +13,7 @@ from src.analytics.productivity import behavior_summary
 from src.analytics.skill_graph import build_skill_graph
 from src.analytics.skills import skill_scores
 from src.analytics.streaks import compute_heatmap, compute_streak
+from src.analytics.trend_forecast import forecast_completion_rate, forecast_deep_work
 from src.analytics.weekly_review import build_weekly_review
 from src.database.base import get_db
 from src.database.models import User
@@ -60,6 +61,7 @@ def get_anomalies(user: User = Depends(get_current_user), db: Session = Depends(
             "baseline_mean": round(a.baseline_mean, 1),
             "z_score": round(a.z_score, 2),
             "ratio": round(a.ratio, 2) if a.baseline_mean else None,
+            "confidence": a.confidence,
         }
         for a in anomalies
     ]
@@ -75,8 +77,17 @@ def get_patterns(user: User = Depends(get_current_user), db: Session = Depends(g
             "correlation": finding.correlation,
             "weeks_observed": finding.weeks_observed,
             "description": finding.description,
+            "confidence": finding.confidence,
         }
     ]
+
+
+@router.get("/trend-forecast")
+def get_trend_forecast(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict:
+    return {
+        "completion_rate": forecast_completion_rate(db, user.id).to_dict(),
+        "deep_work_hours_per_day": forecast_deep_work(db, user.id).to_dict(),
+    }
 
 
 @router.get("/streak")

@@ -21,6 +21,14 @@ class Anomaly:
     def ratio(self) -> float:
         return self.current_value / self.baseline_mean if self.baseline_mean else float("inf")
 
+    @property
+    def confidence(self) -> str:
+        """Insight Confidence (section 54): how far out this really is, not
+        just whether it cleared the surfacing threshold. Since a caller
+        only ever sees an Anomaly that already passed the z-score
+        threshold, this only ever reads "medium" or "high" — never "low"."""
+        return "high" if abs(self.z_score) >= 4.0 else "medium"
+
 
 def detect_zscore_anomaly(metric: str, current_value: float, history: list[float], threshold: float = 2.5) -> Anomaly | None:
     """history = same metric for prior comparable periods (e.g. last 8 weeks)."""

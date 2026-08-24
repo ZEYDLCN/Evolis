@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from apps.api.dependencies import get_current_user
 from src.database.base import get_db
+from src.database.encryption import encryption_enabled
 from src.database.models import User
 from src.services.account_service import delete_user_account, export_user_data
 
@@ -18,6 +19,7 @@ def get_me(user: User = Depends(get_current_user)) -> dict:
         "display_name": user.display_name,
         "google_linked": user.google_sub is not None,
         "created_at": user.created_at.isoformat(),
+        "encryption_enabled": encryption_enabled(),
     }
 
 

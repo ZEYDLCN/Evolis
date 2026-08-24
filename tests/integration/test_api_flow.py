@@ -159,6 +159,56 @@ def test_knowledge_graph_endpoints(client):
     assert r.json()["synced"] is False  # NEO4J_URI not configured in tests
 
 
+def test_trend_forecast_endpoint(client):
+    headers = _auth_headers(client)
+    r = client.get("/analytics/trend-forecast", headers=headers)
+    assert r.status_code == 200
+    body = r.json()
+    assert "completion_rate" in body and "deep_work_hours_per_day" in body
+    assert body["completion_rate"]["direction"] in {"up", "down", "flat"}
+
+
+def test_focus_sessions_endpoint(client):
+    headers = _auth_headers(client)
+    r = client.post("/focus-sessions", json={"duration_minutes": 25}, headers=headers)
+    assert r.status_code == 201, r.text
+
+    r = client.get("/focus-sessions", headers=headers)
+    assert r.status_code == 200
+    body = r.json()
+    assert len(body["sessions"]) == 1
+    assert body["today_minutes"] == 25
+
+
+def test_notifications_endpoint(client):
+    headers = _auth_headers(client)
+    r = client.get("/notifications", headers=headers)
+    assert r.status_code == 200
+    assert isinstance(r.json(), list)
+
+
+def test_search_with_filters(client):
+    headers = _auth_headers(client)
+    client.post("/entries", json={"text": "LangGraph üzerine çalıştım."}, headers=headers)
+
+    r = client.get("/search?q=LangGraph&topic=LangGraph", headers=headers)
+    assert r.status_code == 200
+    assert len(r.json()["entries"]) == 1
+
+    r = client.get("/search?q=LangGraph&days=1", headers=headers)
+    assert r.status_code == 200
+    assert len(r.json()["entries"]) == 1
+
+
+def test_ask_response_includes_tool_trace(client):
+    headers = _auth_headers(client)
+    r = client.post("/ask", json={"question": "Nasıl değiştim?"}, headers=headers)
+    assert r.status_code == 200
+    body = r.json()
+    assert "tool_trace" in body
+    assert len(body["tool_trace"]) >= 3
+
+
 def test_me_endpoint(client):
     email = f"{uuid.uuid4()}@example.com"
     r = client.post("/auth/register", json={"email": email, "password": "hunter2"})
@@ -169,6 +219,7 @@ def test_me_endpoint(client):
     body = r.json()
     assert body["email"] == email
     assert body["google_linked"] is False
+    assert body["encryption_enabled"] is False
 
 
 def test_account_export_and_delete(client):

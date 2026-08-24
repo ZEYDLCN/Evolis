@@ -84,12 +84,24 @@ export const api = {
   skillGraph: (months = 6) => apiFetch<{ nodes: SkillNode[]; edges: { from: string; to: string }[] }>(`/analytics/skill-graph?months=${months}`),
   anomalies: () => apiFetch<Anomaly[]>("/analytics/anomalies"),
   patterns: () => apiFetch<Pattern[]>("/analytics/patterns"),
+  trendForecast: () => apiFetch<TrendForecastResponse>("/analytics/trend-forecast"),
+
+  notifications: () => apiFetch<Notification[]>("/notifications"),
+
+  logFocusSession: (payload: { duration_minutes: number; project_id?: string | null; is_deep_work?: boolean }) =>
+    apiFetch<FocusSession>("/focus-sessions", { method: "POST", body: JSON.stringify(payload) }),
+  focusSessions: () => apiFetch<{ sessions: FocusSession[]; today_minutes: number }>("/focus-sessions"),
 
   listProjects: () => apiFetch<Project[]>("/projects"),
   createProject: (name: string) => apiFetch<Project>("/projects", { method: "POST", body: JSON.stringify({ name }) }),
   projectDetail: (id: string) => apiFetch<ProjectDetail>(`/projects/${encodeURIComponent(id)}`),
 
-  search: (q: string) => apiFetch<SearchResults>(`/search?q=${encodeURIComponent(q)}`),
+  search: (q: string, opts?: { days?: number; topic?: string }) => {
+    const params = new URLSearchParams({ q });
+    if (opts?.days) params.set("days", String(opts.days));
+    if (opts?.topic) params.set("topic", opts.topic);
+    return apiFetch<SearchResults>(`/search?${params.toString()}`);
+  },
 
   dayDetail: (date: string) => apiFetch<DayDetail>(`/day/${date}`),
 
@@ -224,12 +236,14 @@ export interface Anomaly {
   baseline_mean: number;
   z_score: number;
   ratio: number | null;
+  confidence: "low" | "medium" | "high";
 }
 
 export interface Pattern {
   correlation: number;
   weeks_observed: number;
   description: string;
+  confidence: "low" | "medium" | "high";
 }
 
 export interface DashboardVersionCard {
@@ -286,6 +300,11 @@ export interface AskEvidence {
   source_entries: string[];
 }
 
+export interface ToolTraceStep {
+  step: string;
+  detail: string;
+}
+
 export interface AskResult {
   question: string;
   query_class: string;
@@ -293,6 +312,35 @@ export interface AskResult {
   grounded: boolean;
   analysis: Record<string, unknown>;
   evidence: AskEvidence;
+  tool_trace: ToolTraceStep[];
+}
+
+export interface TrendForecast {
+  metric: string;
+  history: number[];
+  forecast_next: number;
+  direction: "up" | "down" | "flat";
+  confidence: "low" | "medium" | "high";
+}
+
+export interface TrendForecastResponse {
+  completion_rate: TrendForecast;
+  deep_work_hours_per_day: TrendForecast;
+}
+
+export interface Notification {
+  type: "anomaly" | "pattern" | "goal_suggestion";
+  title: string;
+  detail: string;
+  confidence: "low" | "medium" | "high";
+}
+
+export interface FocusSession {
+  id: string;
+  project_id: string | null;
+  started_at: string;
+  duration_minutes: number;
+  is_deep_work: boolean;
 }
 
 export interface EvolisScore {
@@ -372,6 +420,7 @@ export interface Me {
   display_name: string | null;
   google_linked: boolean;
   created_at: string;
+  encryption_enabled: boolean;
 }
 
 export interface GoalSuggestion {

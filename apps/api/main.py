@@ -14,8 +14,10 @@ from apps.api.routers import (
     day,
     diff,
     entries,
+    focus,
     goals,
     graph,
+    notifications,
     projects,
     search,
     tasks,
@@ -89,3 +91,5 @@ app.include_router(ask.router)
 app.include_router(search.router)
 app.include_router(goals.router)
 app.include_router(day.router)
+app.include_router(focus.router)
+app.include_router(notifications.router)

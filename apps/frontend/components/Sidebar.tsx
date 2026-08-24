@@ -6,6 +6,7 @@ import { clearToken } from "../lib/api";
 import { cn } from "../lib/cn";
 import EvolisLogo from "./EvolisLogo";
 import ThemeToggle from "./ThemeToggle";
+import NotificationBell from "./NotificationBell";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Overview" },
@@ -14,6 +15,7 @@ const NAV_ITEMS = [
   { href: "/evolution", label: "Evolution" },
   { href: "/projects", label: "Projects" },
   { href: "/goals", label: "Goals" },
+  { href: "/focus", label: "Focus" },
   { href: "/insights", label: "Insights" },
   { href: "/ask", label: "Ask Evolis" },
 ];
@@ -28,13 +30,16 @@ export default function Sidebar() {
         <EvolisLogo size={28} />
       </Link>
 
-      <button
-        onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
-        className="mb-4 flex items-center justify-between rounded-xl border border-line bg-surface px-3 py-2 text-sm text-muted transition-colors hover:border-brand-emerald hover:text-brand-emerald"
-      >
-        <span>Search</span>
-        <kbd className="rounded border border-line bg-card px-1.5 py-0.5 text-[10px] font-medium">⌘K</kbd>
-      </button>
+      <div className="mb-4 flex items-center gap-2">
+        <button
+          onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
+          className="flex flex-1 items-center justify-between rounded-xl border border-line bg-surface px-3 py-2 text-sm text-muted transition-colors hover:border-brand-emerald hover:text-brand-emerald"
+        >
+          <span>Search</span>
+          <kbd className="rounded border border-line bg-card px-1.5 py-0.5 text-[10px] font-medium">⌘K</kbd>
+        </button>
+        <NotificationBell />
+      </div>
 
       <nav className="flex flex-1 flex-col gap-1">
         {NAV_ITEMS.map((item) => {

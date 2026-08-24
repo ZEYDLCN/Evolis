@@ -97,6 +97,29 @@ def get_compiled_graph() -> Any:
     return _compiled
 
 
+def _build_tool_trace(result: AskState) -> list[dict]:
+    """Tool Transparency (section 45): what the graph actually did, in
+    plain language — which tools ran and why — so "Ask Evolis" never
+    feels like a black box even though the wording is LLM-generated."""
+    plan = result["plan"]
+    trace = [
+        {"step": "classify", "detail": f'Classified as "{result["query_class"]}".'},
+        {
+            "step": "plan",
+            "detail": f"Looking at {plan.start.date().isoformat()} → {plan.end.date().isoformat()}"
+            + (", using SQL analytics" if plan.use_sql else "")
+            + (" and vector search over past entries" if plan.use_vector_search else "") + ".",
+        },
+        {"step": "analyze", "detail": f'Computed {len(result["analysis"])} analytics field(s) — no numbers were guessed.'},
+        {"step": "explain", "detail": "LLM phrased the computed numbers as prose."},
+        {
+            "step": "verify",
+            "detail": "Checked the answer's numbers against the analysis" + ("." if result.get("grounded", True) else " — fell back to the template answer since a number didn't match."),
+        },
+    ]
+    return trace
+
+
 def run_ask_graph(db: Session, user_id: str, question: str) -> dict:
     result = get_compiled_graph().invoke({"db": db, "user_id": user_id, "question": question})
     return {
@@ -106,4 +129,5 @@ def run_ask_graph(db: Session, user_id: str, question: str) -> dict:
         "answer": result["answer"],
         "grounded": result.get("grounded", True),
         "evidence": build_evidence(result["analysis"]),
+        "tool_trace": _build_tool_trace(result),
     }

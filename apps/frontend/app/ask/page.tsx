@@ -3,7 +3,7 @@
 import { useState } from "react";
 import AppShell from "../../components/AppShell";
 import { useRequireAuth } from "../../lib/useAuth";
-import { api, AskEvidence, ApiError } from "../../lib/api";
+import { api, AskEvidence, ApiError, ToolTraceStep } from "../../lib/api";
 import { Card } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
@@ -24,6 +24,32 @@ interface ChatMessage {
   text: string;
   queryClass?: string;
   evidence?: AskEvidence;
+  toolTrace?: ToolTraceStep[];
+}
+
+/** Tool Transparency (section 45): shows the actual steps the LangGraph
+ * pipeline ran, in plain language — never a black box even though the
+ * final wording is LLM-generated. */
+function ToolTracePanel({ trace }: { trace: ToolTraceStep[] }) {
+  const [expanded, setExpanded] = useState(false);
+  if (trace.length === 0) return null;
+
+  return (
+    <div className="mt-2 border-t border-line pt-2">
+      <button onClick={() => setExpanded((e) => !e)} className="text-xs font-semibold text-muted hover:text-brand-emerald">
+        {expanded ? "Hide" : "How was this computed?"}
+      </button>
+      {expanded && (
+        <ol className="mt-2 space-y-1.5">
+          {trace.map((step, i) => (
+            <li key={i} className="text-xs text-muted">
+              <span className="font-mono uppercase text-brand-emerald">{step.step}</span> — {step.detail}
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
+  );
 }
 
 function EvidencePanel({ evidence }: { evidence: AskEvidence }) {
@@ -79,7 +105,10 @@ export default function AskPage() {
     setLoading(true);
     try {
       const result = await api.ask(q);
-      setMessages((prev) => [...prev, { role: "assistant", text: result.answer, queryClass: result.query_class, evidence: result.evidence }]);
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", text: result.answer, queryClass: result.query_class, evidence: result.evidence, toolTrace: result.tool_trace },
+      ]);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to get an answer");
     } finally {
@@ -123,6 +152,7 @@ export default function AskPage() {
                 )}
                 <p className="text-sm text-ink">{m.text}</p>
                 {m.evidence && <EvidencePanel evidence={m.evidence} />}
+                {m.toolTrace && <ToolTracePanel trace={m.toolTrace} />}
               </Card>
             </div>
           )

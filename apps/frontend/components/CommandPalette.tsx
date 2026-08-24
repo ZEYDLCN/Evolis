@@ -8,10 +8,17 @@ import { getToken } from "../lib/api";
 /** Global Cmd+K / Ctrl+K search across entries, projects, topics, skills,
  * and versions (section 14). Purely a navigation shortcut — no LLM, no
  * ranking beyond what src/services/search_service.py already returns. */
+const DAY_FILTERS: { label: string; days: number | undefined }[] = [
+  { label: "All time", days: undefined },
+  { label: "7 days", days: 7 },
+  { label: "30 days", days: 30 },
+];
+
 export default function CommandPalette() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [days, setDays] = useState<number | undefined>(undefined);
   const [results, setResults] = useState<SearchResults | null>(null);
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -47,12 +54,12 @@ export default function CommandPalette() {
     setLoading(true);
     const handle = setTimeout(() => {
       api
-        .search(q)
+        .search(q, { days })
         .then(setResults)
         .finally(() => setLoading(false));
     }, 200);
     return () => clearTimeout(handle);
-  }, [query, open]);
+  }, [query, open, days]);
 
   function go(path: string) {
     setOpen(false);
@@ -74,6 +81,19 @@ export default function CommandPalette() {
           placeholder="Search entries, projects, topics, skills..."
           className="w-full rounded-t-2xl border-b border-line bg-transparent px-4 py-3.5 text-sm text-ink placeholder:text-muted focus:outline-none"
         />
+        <div className="flex gap-1.5 border-b border-line px-3 py-2">
+          {DAY_FILTERS.map((f) => (
+            <button
+              key={f.label}
+              onClick={() => setDays(f.days)}
+              className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+                days === f.days ? "bg-brand-emerald text-white" : "bg-surface text-muted hover:text-ink"
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
         <div className="max-h-96 overflow-y-auto p-2">
           {!query.trim() && <div className="px-2 py-4 text-center text-xs text-muted">Type to search, Esc to close.</div>}
           {loading && <div className="px-2 py-4 text-center text-xs text-muted">Searching...</div>}

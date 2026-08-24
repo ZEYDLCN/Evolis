@@ -31,6 +31,18 @@ class PatternFinding:
     weeks_observed: int
 
     @property
+    def confidence(self) -> str:
+        """Insight Confidence (section 54): a caller only ever sees a
+        finding that already cleared NOTABLE_CORRELATION, so this reflects
+        sample size and correlation strength together rather than
+        re-deciding whether to surface it at all."""
+        if self.weeks_observed >= 8 and abs(self.correlation) >= 0.6:
+            return "high"
+        if self.weeks_observed >= MIN_WEEKS_FOR_CORRELATION:
+            return "medium"
+        return "low"
+
+    @property
     def description(self) -> str:
         direction = "yükseldiği dönemlerde" if self.correlation > 0 else "düştüğü dönemlerde"
         other_direction = "yükseliyor" if self.correlation > 0 else "düşüyor"

@@ -78,6 +78,12 @@ export default function ProfilePage() {
         <p className="mb-3 text-xs text-muted">
           Your entries are yours. Export everything Evolis has stored about you, or permanently delete your account.
         </p>
+        {me && (
+          <div className="mb-3 flex items-center justify-between rounded-xl bg-surface px-3 py-2 text-sm">
+            <span className="text-ink">Entry encryption at rest</span>
+            <Badge tone={me.encryption_enabled ? "positive" : "neutral"}>{me.encryption_enabled ? "Enabled" : "Not enabled"}</Badge>
+          </div>
+        )}
         <div className="flex flex-wrap gap-3">
           <Button variant="secondary" onClick={exportData}>
             Export my data

@@ -41,6 +41,7 @@ def test_learning_time_spike_is_flagged():
 
     anomalies = detect_learning_time_anomalies(db, user.id, now=now)
     assert any(a.metric == "Total learning time" for a in anomalies)
+    assert all(a.confidence in {"medium", "high"} for a in anomalies)
 
 
 def test_no_anomaly_when_flat():
