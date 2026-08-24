@@ -8,6 +8,15 @@
   "initializeCommand": "bash .devcontainer/initialize.sh",
   "postCreateCommand": "bash .devcontainer/post-create.sh",
 
+  // Lets the integrated terminal (which runs *inside* the evolis-api
+  // container) control the sibling containers via the host's real Docker
+  // daemon -- `docker compose restart evolis-api`, `docker compose logs`,
+  // etc. all work from there without this container running its own
+  // nested Docker.
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+  },
+
   "forwardPorts": [3000, 8000, 5432, 6379],
   "portsAttributes": {
     "3000": { "label": "Evolis Frontend", "onAutoForward": "openPreview" },
