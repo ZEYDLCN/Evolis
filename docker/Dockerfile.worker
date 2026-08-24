@@ -2,9 +2,13 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
+RUN groupadd -r evolis && useradd -r -g evolis evolis
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
+RUN chown -R evolis:evolis /app
+USER evolis
 
 CMD ["celery", "-A", "apps.worker.celery_app", "worker", "--loglevel=info"]

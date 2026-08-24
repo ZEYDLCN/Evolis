@@ -1,3 +1,6 @@
+# Local development stack: live-reload frontend, ports exposed to the host
+# for direct DB/Redis access, no restart policy. For a real deployment use
+# docker-compose.prod.yml instead (see DEPLOYMENT.md).
 services:
   postgres:
     image: pgvector/pgvector:pg16
@@ -44,6 +47,7 @@ services:
   evolis-frontend:
     build:
       context: ./apps/frontend
+      dockerfile: Dockerfile.dev
     ports:
       - "3000:3000"
     environment:

@@ -11,3 +11,9 @@ import tempfile
 
 _db_dir = tempfile.mkdtemp(prefix="evolis-test-")
 os.environ.setdefault("DATABASE_URL", f"sqlite:///{_db_dir}/test.db")
+
+# The auth rate limiter (apps/api/rate_limit.py) is a real production
+# safeguard, but the test suite legitimately registers many accounts in a
+# tight loop from what looks like a single client — disable it here rather
+# than in the app itself.
+os.environ.setdefault("AUTH_RATE_LIMIT_MAX_REQUESTS", "0")

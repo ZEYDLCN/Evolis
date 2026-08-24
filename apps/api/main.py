@@ -25,12 +25,33 @@ from apps.api.routers import (
     timeline,
     versions,
 )
+from apps.api.config import (
+    AUTH_RATE_LIMIT_MAX_REQUESTS,
+    AUTH_RATE_LIMIT_WINDOW_SECONDS,
+    CORS_ALLOWED_ORIGINS,
+    CORS_EXPLICITLY_SET,
+    ENVIRONMENT,
+    SECRET_KEY,
+)
+from apps.api.rate_limit import RateLimitMiddleware
 from src.database.base import init_db
 from src.monitoring.metrics import http_request_duration_seconds, http_requests_total, render_metrics
 
 
+def _check_production_config() -> None:
+    """Refuse to boot with dev defaults in production rather than serving
+    a JWT signed with a publicly-known key, or a wide-open CORS policy."""
+    if ENVIRONMENT != "production":
+        return
+    if SECRET_KEY == "dev-secret-change-me":
+        raise RuntimeError("SECRET_KEY must be set to a real secret when ENVIRONMENT=production")
+    if not CORS_EXPLICITLY_SET or "*" in CORS_ALLOWED_ORIGINS:
+        raise RuntimeError("CORS_ALLOWED_ORIGINS must be set explicitly (no wildcard) when ENVIRONMENT=production")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    _check_production_config()
     init_db()
     yield
 
@@ -44,10 +65,22 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # tighten for production
+    allow_origins=CORS_ALLOWED_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Cheap brute-force guard on auth endpoints. In-memory, so it resets on
+# restart and doesn't share state across multiple API replicas — fine for a
+# single-instance deployment; swap for a Redis-backed limiter (REDIS_URL is
+# already provisioned for Celery) before running more than one replica.
+if AUTH_RATE_LIMIT_MAX_REQUESTS > 0:
+    app.add_middleware(
+        RateLimitMiddleware,
+        path_prefixes=("/auth/login", "/auth/register"),
+        max_requests=AUTH_RATE_LIMIT_MAX_REQUESTS,
+        window_seconds=AUTH_RATE_LIMIT_WINDOW_SECONDS,
+    )
 
 
 @app.middleware("http")
